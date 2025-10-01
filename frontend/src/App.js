@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+
 
 function App() {
   const [msg, setMsg] = useState("cargando...");
