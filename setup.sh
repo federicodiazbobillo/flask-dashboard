@@ -4,59 +4,55 @@ set -e
 echo "🚀 Iniciando setup de servidor Flask + React..."
 
 # ──────────────────────────────
-# Verificar si es root
+# Permisos: permitir root o el usuario 'dashboard'
 # ──────────────────────────────
-if [ "$EUID" -ne 0 ]; then
-  echo "⚠️ Este script debe ejecutarse con sudo o como root"
+if [ "$EUID" -ne 0 ] && [ "$USER" != "dashboard" ]; then
+  echo "⚠️ Este script debe ejecutarse con sudo (root) o como 'dashboard'"
   exit 1
 fi
 
 # ──────────────────────────────
-# Dependencias de sistema
+# FASE ROOT
 # ──────────────────────────────
-if command -v apt >/dev/null 2>&1; then
-  echo "📦 Instalando dependencias del sistema con apt..."
-  apt update -y
-  apt install -y \
-    python3 python3-venv python3-pip \
-    nodejs npm git curl build-essential \
-    dmidecode lshw hwinfo
-else
-  echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
-fi
+if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
+  # Dependencias del sistema
+  if command -v apt >/dev/null 2>&1; then
+    echo "📦 Instalando dependencias del sistema con apt..."
+    apt update -y
+    apt install -y \
+      python3 python3-venv python3-pip \
+      nodejs npm git curl build-essential \
+      dmidecode lshw hwinfo psmisc
+  else
+    echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
+  fi
 
-# ──────────────────────────────
-# Crear usuario dedicado
-# ──────────────────────────────
-if ! id -u dashboard >/dev/null 2>&1; then
-  echo "👤 Creando usuario 'dashboard'..."
-  useradd -m -s /bin/bash dashboard
-fi
+  # Usuario dedicado
+  if ! id -u dashboard >/dev/null 2>&1; then
+    echo "👤 Creando usuario 'dashboard'..."
+    useradd -m -s /bin/bash dashboard
+  fi
 
-# Dar permisos NOPASSWD para comandos de hardware
-echo "🔑 Configurando sudoers para usuario 'dashboard'..."
-echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | tee /etc/sudoers.d/dashboard
-chmod 440 /etc/sudoers.d/dashboard
+  # Sudoers para comandos de hardware
+  echo "🔑 Configurando sudoers para usuario 'dashboard'..."
+  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | tee /etc/sudoers.d/dashboard >/dev/null
+  chmod 440 /etc/sudoers.d/dashboard
 
-# ──────────────────────────────
-# Transferir permisos al usuario dashboard
-# ──────────────────────────────
-PROJECT_DIR="$(pwd)"
-chown -R dashboard:dashboard "$PROJECT_DIR"
+  # Permisos del proyecto
+  PROJECT_DIR="$(pwd)"
+  chown -R dashboard:dashboard "$PROJECT_DIR"
 
-# ──────────────────────────────
-# Re-ejecutar como dashboard
-# ──────────────────────────────
-if [ "$USER" != "dashboard" ]; then
+  # Re-ejecutar como dashboard (fase usuario)
   echo "🔄 Re-ejecutando setup como usuario 'dashboard'..."
   exec sudo -u dashboard -H bash "$0"
 fi
 
 # ──────────────────────────────
-# Backend (Flask)
+# FASE USUARIO (dashboard)
 # ──────────────────────────────
-echo "📦 Configurando backend (Flask)..."
 
+# Backend (Flask)
+echo "📦 Configurando backend (Flask)..."
 cd backend
 if [ ! -d "venv" ]; then
   echo "➕ Creando entorno virtual en backend/venv"
@@ -68,11 +64,8 @@ pip install --upgrade pip
 deactivate
 cd ..
 
-# ──────────────────────────────
 # Frontend (React + Tailwind)
-# ──────────────────────────────
 echo "📦 Configurando frontend (React + Tailwind)..."
-
 cd frontend
 if [ -f "package.json" ]; then
   echo "→ Ejecutando npm install..."
@@ -87,6 +80,7 @@ if [ -f "package.json" ]; then
   echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
   npm install -D tailwindcss postcss autoprefixer
 
+  # Config de Tailwind
   if [ ! -f "tailwind.config.js" ]; then
     npx tailwindcss init -p
     cat > tailwind.config.js << 'EOF'
@@ -98,6 +92,7 @@ export default {
 EOF
   fi
 
+  # CSS base
   if [ ! -f "src/index.css" ]; then
     mkdir -p src
     cat > src/index.css << 'EOF'
@@ -113,11 +108,8 @@ EOF
 fi
 cd ..
 
-# ──────────────────────────────
 # Scripts de inicio
-# ──────────────────────────────
 echo "⚙️ Creando scripts de inicio..."
-
 cat > start_flask.sh << 'EOF'
 #!/bin/bash
 cd backend
@@ -137,9 +129,7 @@ npm run dev -- --host 0.0.0.0 --port=5173
 EOF
 chmod +x start_react.sh
 
-# ──────────────────────────────
 # Resumen final
-# ──────────────────────────────
 echo ""
 echo "✅ Setup completo!"
 echo "👉 Usuario de ejecución: dashboard"
