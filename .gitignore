@@ -12,6 +12,9 @@ build/
 .env
 .flaskenv
 
+start_flask.sh
+start_react.sh
+
 
 #archivos de start
 start_flask.sh
