@@ -9,6 +9,7 @@ def root():
     return jsonify({"message": "Hola desde Flask 👋"})
 
 @bp.route("/stats", methods=["GET"])
+@bp.route("/stats/", methods=["GET"])
 def stats():
     try:
         cpu_percent = psutil.cpu_percent(interval=0.5)
