@@ -8,16 +8,41 @@ function Dashboard() {
     cpu_temp: null,
     memory_percent: 0,
     memory_total_gb: 0,
+    memory_available_gb: 0,
     disk_percent: 0,
     disk_total_gb: 0,
+    disk_free_gb: 0,
   });
 
   useEffect(() => {
-    const fetchStats = () => {
-      fetch("/api/stats")
-        .then((res) => res.json())
-        .then((data) => setStats(data))
-        .catch((err) => console.error("Error:", err));
+    const fetchStats = async () => {
+      try {
+        // CPU
+        const cpuRes = await fetch("/api/server-info/cpu/");
+        const cpu = await cpuRes.json();
+
+        // Memoria
+        const memRes = await fetch("/api/server-info/memory/");
+        const memory = await memRes.json();
+
+        // Disco
+        const diskRes = await fetch("/api/server-info/storage/");
+        const storage = await diskRes.json();
+
+        setStats({
+          cpu_model: cpu.cpu_model,
+          cpu_percent: cpu.cpu_percent,
+          cpu_temp: cpu.cpu_temp,
+          memory_percent: memory.memory_percent,
+          memory_total_gb: memory.memory_total_gb,
+          memory_available_gb: memory.memory_available_gb,
+          disk_percent: storage.disk_percent,
+          disk_total_gb: storage.disk_total_gb,
+          disk_free_gb: storage.disk_free_gb,
+        });
+      } catch (err) {
+        console.error("Error al cargar stats:", err);
+      }
     };
 
     fetchStats();
@@ -48,7 +73,7 @@ function Dashboard() {
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
         <h2 className="text-xl mb-2">Memoria RAM</h2>
         <p className="text-sm text-gray-400 mb-4">
-          Total: {stats.memory_total_gb} GB
+          Total: {stats.memory_total_gb} GB — Disponible: {stats.memory_available_gb} GB
         </p>
         <GaugeChart
           id="mem-gauge"
@@ -64,7 +89,7 @@ function Dashboard() {
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
         <h2 className="text-xl mb-2">Disco</h2>
         <p className="text-sm text-gray-400 mb-4">
-          Total: {stats.disk_total_gb} GB
+          Total: {stats.disk_total_gb} GB — Libre: {stats.disk_free_gb} GB
         </p>
         <GaugeChart
           id="disk-gauge"
