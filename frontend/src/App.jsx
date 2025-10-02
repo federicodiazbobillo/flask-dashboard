@@ -1,21 +1,7 @@
-import { useEffect, useState } from "react";
+import Dashboard from "./Dashboard";
 
 function App() {
-  const [msg, setMsg] = useState("cargando...");
-
-  useEffect(() => {
-    fetch("/api/hello")   // 👈 usa la IP del servidor remoto
-      .then(res => res.json())
-      .then(data => setMsg(data.message))
-      .catch(err => setMsg("❌ Error: " + err.message));
-  }, []);
-
-  return (
-    <div>
-      <h1>React + Flask dashboard</h1>
-      <p>Respuesta de la API: {msg}</p>
-    </div>
-  );
+  return <Dashboard />;
 }
 
 export default App;
