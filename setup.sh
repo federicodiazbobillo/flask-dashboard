@@ -50,6 +50,7 @@ fi
 # ──────────────────────────────
 # FASE USUARIO (dashboard)
 # ──────────────────────────────
+PROJECT_DIR="$(pwd)"
 
 # Backend (Flask)
 echo "📦 Configurando backend (Flask)..."
@@ -106,6 +107,10 @@ body {
 EOF
   fi
 fi
+
+# 🔒 Ajustar permisos de frontend SIEMPRE (para evitar EACCES)
+echo "🔒 Ajustando permisos de frontend..."
+chown -R dashboard:dashboard "$PROJECT_DIR/frontend"
 cd ..
 
 # Scripts de inicio
