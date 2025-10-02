@@ -15,13 +15,13 @@ fi
 # FASE ROOT
 # ──────────────────────────────
 if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
-  # Dependencias del sistema
+  # Dependencias del sistema (sin nodejs/npm de apt)
   if command -v apt >/dev/null 2>&1; then
     echo "📦 Instalando dependencias del sistema con apt..."
     apt update -y
     apt install -y \
       python3 python3-venv python3-pip \
-      nodejs npm git curl build-essential \
+      git curl build-essential \
       dmidecode lshw hwinfo psmisc lsof
   else
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
@@ -51,6 +51,26 @@ fi
 # FASE USUARIO (dashboard)
 # ──────────────────────────────
 PROJECT_DIR="$(pwd)"
+
+# Node.js con NVM
+echo "📦 Configurando Node.js con NVM..."
+if [ ! -d "$HOME/.nvm" ]; then
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+else
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+fi
+
+# Instalar Node 22 LTS
+nvm install 22
+nvm alias default 22
+nvm use 22
+
+echo "✅ Node.js versión instalada:"
+node -v
+npm -v
 
 # Backend (Flask)
 echo "📦 Configurando backend (Flask)..."
@@ -108,7 +128,7 @@ EOF
   fi
 fi
 
-# 🔒 Ajustar permisos de frontend SIEMPRE (para evitar EACCES)
+# 🔒 Ajustar permisos de frontend SIEMPRE
 echo "🔒 Ajustando permisos de frontend..."
 chown -R dashboard:dashboard "$PROJECT_DIR/frontend"
 cd ..
@@ -136,7 +156,6 @@ chmod +x start_flask.sh
 cat > start_react.sh << 'EOF'
 #!/bin/bash
 cd frontend
-# Matar procesos previos en el puerto 5173
 PID=$(lsof -t -i:5173)
 if [ -n "$PID" ]; then
   echo "🔪 Matando proceso en puerto 5173 (PID $PID)"
