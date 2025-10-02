@@ -50,6 +50,9 @@ if [ -f "package.json" ]; then
     echo "⚠️ Conflicto detectado, reintentando con --legacy-peer-deps"
     npm install --legacy-peer-deps
   fi
+
+  echo "➕ Instalando dependencias extra del dashboard..."
+  npm install react-gauge-chart
 fi
 cd ..
 
@@ -63,7 +66,11 @@ cat > start_flask.sh << 'EOF'
 cd backend
 source venv/bin/activate
 fuser -k 5000/tcp || true
-FLASK_ENV=development flask run --host=0.0.0.0 --port=5000
+
+export FLASK_APP=wsgi.py
+export FLASK_ENV=development
+
+flask run --host=0.0.0.0 --port=5000
 EOF
 chmod +x start_flask.sh
 
