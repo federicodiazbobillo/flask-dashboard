@@ -18,10 +18,23 @@ else
 fi
 
 # ──────────────────────────────
-# Asegurar permisos correctos
+# Crear usuario dedicado
 # ──────────────────────────────
-echo "🔑 Ajustando permisos de la carpeta del proyecto..."
-sudo chown -R $USER:$USER "$(pwd)"
+if ! id -u dashboard >/dev/null 2>&1; then
+  echo "👤 Creando usuario 'dashboard'..."
+  sudo useradd -m -s /bin/bash dashboard
+fi
+
+# Dar permisos NOPASSWD para comandos de hardware
+echo "🔑 Configurando sudoers para usuario 'dashboard'..."
+echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | sudo tee /etc/sudoers.d/dashboard
+sudo chmod 440 /etc/sudoers.d/dashboard
+
+# ──────────────────────────────
+# Asegurar permisos del proyecto
+# ──────────────────────────────
+echo "📂 Ajustando permisos de la carpeta del proyecto..."
+sudo chown -R dashboard:dashboard "$(pwd)"
 
 # ──────────────────────────────
 # Backend (Flask)
@@ -120,5 +133,6 @@ chmod +x start_react.sh
 # ──────────────────────────────
 echo ""
 echo "✅ Setup completo!"
-echo "👉 Levantar backend: ./start_flask.sh"
-echo "👉 Levantar frontend: ./start_react.sh"
+echo "👉 Usuario de ejecución: dashboard"
+echo "👉 Levantar backend: sudo -u dashboard ./start_flask.sh"
+echo "👉 Levantar frontend: sudo -u dashboard ./start_react.sh"
