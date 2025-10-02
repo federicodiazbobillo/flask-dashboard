@@ -4,6 +4,7 @@ import psutil
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 # 👉 Ahora la raíz del blueprint (/api) devuelve el mensaje
+@bp.route("", methods=["GET"])
 @bp.route("/", methods=["GET"])
 def root():
     return jsonify({"message": "Hola desde Flask 👋"})
