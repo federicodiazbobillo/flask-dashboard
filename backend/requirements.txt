@@ -1,0 +1,16 @@
+# --- Core Flask ---
+flask==2.3.3
+flask-cors==4.0.0        # Para permitir requests desde React
+python-dotenv==1.0.0     # Para manejar variables de entorno (configuración)
+
+# --- DB opcional (descomentá según uses) ---
+# psycopg2-binary==2.9.9   # PostgreSQL
+# mysqlclient==2.2.4       # MySQL/MariaDB
+# pymongo==4.7.2           # MongoDB
+
+# --- Testing / Dev ---
+pytest==7.4.2
+requests==2.31.0
+
+# --- Utilidades ---
+gunicorn==21.2.0          # Para producción con WSGI
