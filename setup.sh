@@ -11,7 +11,8 @@ if command -v apt >/dev/null 2>&1; then
   sudo apt update -y
   sudo apt install -y \
     python3 python3-venv python3-pip \
-    nodejs npm git curl build-essential
+    nodejs npm git curl build-essential \
+    dmidecode lshw hwinfo
 else
   echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
 fi
@@ -60,7 +61,6 @@ if [ -f "package.json" ]; then
   # Generar config de Tailwind si no existe
   if [ ! -f "tailwind.config.js" ]; then
     npx tailwindcss init -p
-    # Sobrescribir contenido básico
     cat > tailwind.config.js << 'EOF'
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
@@ -122,4 +122,3 @@ echo ""
 echo "✅ Setup completo!"
 echo "👉 Levantar backend: ./start_flask.sh"
 echo "👉 Levantar frontend: ./start_react.sh"
- 
