@@ -138,6 +138,13 @@ echo "⚙️ Creando scripts de inicio..."
 cat > start_flask.sh << 'EOF'
 #!/bin/bash
 cd backend
+
+# Activar NVM y Node 22
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 22
+
+# Activar entorno Python
 source venv/bin/activate
 
 # Matar procesos previos en el puerto 5000
@@ -153,14 +160,23 @@ flask run --host=0.0.0.0 --port=5000
 EOF
 chmod +x start_flask.sh
 
+
 cat > start_react.sh << 'EOF'
 #!/bin/bash
 cd frontend
+
+# Activar NVM y Node 22
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 22
+
+# Matar procesos previos en el puerto 5173
 PID=$(lsof -t -i:5173)
 if [ -n "$PID" ]; then
   echo "🔪 Matando proceso en puerto 5173 (PID $PID)"
   kill -9 $PID
 fi
+
 npm run dev -- --host 0.0.0.0 --port=5173
 EOF
 chmod +x start_react.sh
