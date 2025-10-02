@@ -3,12 +3,11 @@ import psutil
 import platform
 
 try:
-    import cpuinfo  # pip install py-cpuinfo
+    import cpuinfo
 except ImportError:
     cpuinfo = None
 
-# strict_slashes=False permite que /api/stats y /api/stats/ funcionen igual
-bp = Blueprint("api", __name__, url_prefix="/api", strict_slashes=False)
+bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 @bp.route("/", methods=["GET"])
@@ -19,7 +18,6 @@ def root():
 @bp.route("/stats", methods=["GET"])
 def stats():
     try:
-        # CPU
         cpu_percent = psutil.cpu_percent(interval=0.5)
         cpu_model = None
         if cpuinfo:
@@ -27,17 +25,14 @@ def stats():
         if not cpu_model:
             cpu_model = platform.processor() or "Unknown CPU"
 
-        # RAM
         memory = psutil.virtual_memory()
         memory_percent = memory.percent
-        memory_total_gb = round(memory.total / (1024**3), 2)  # en GB
+        memory_total_gb = round(memory.total / (1024**3), 2)
 
-        # Disco
         disk = psutil.disk_usage("/")
         disk_percent = disk.percent
-        disk_total_gb = round(disk.total / (1024**3), 2)  # en GB
+        disk_total_gb = round(disk.total / (1024**3), 2)
 
-        # Temperatura (si está disponible en Linux)
         temps = psutil.sensors_temperatures()
         cpu_temp = None
         if temps:
