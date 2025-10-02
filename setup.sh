@@ -4,12 +4,20 @@ set -e
 echo "🚀 Iniciando setup de servidor Flask + React..."
 
 # ──────────────────────────────
+# Verificar si es root
+# ──────────────────────────────
+if [ "$EUID" -ne 0 ]; then
+  echo "⚠️ Este script debe ejecutarse con sudo o como root"
+  exit 1
+fi
+
+# ──────────────────────────────
 # Dependencias de sistema
 # ──────────────────────────────
 if command -v apt >/dev/null 2>&1; then
   echo "📦 Instalando dependencias del sistema con apt..."
-  sudo apt update -y
-  sudo apt install -y \
+  apt update -y
+  apt install -y \
     python3 python3-venv python3-pip \
     nodejs npm git curl build-essential \
     dmidecode lshw hwinfo
@@ -22,19 +30,27 @@ fi
 # ──────────────────────────────
 if ! id -u dashboard >/dev/null 2>&1; then
   echo "👤 Creando usuario 'dashboard'..."
-  sudo useradd -m -s /bin/bash dashboard
+  useradd -m -s /bin/bash dashboard
 fi
 
 # Dar permisos NOPASSWD para comandos de hardware
 echo "🔑 Configurando sudoers para usuario 'dashboard'..."
-echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | sudo tee /etc/sudoers.d/dashboard
-sudo chmod 440 /etc/sudoers.d/dashboard
+echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | tee /etc/sudoers.d/dashboard
+chmod 440 /etc/sudoers.d/dashboard
 
 # ──────────────────────────────
-# Asegurar permisos del proyecto
+# Transferir permisos al usuario dashboard
 # ──────────────────────────────
-echo "📂 Ajustando permisos de la carpeta del proyecto..."
-sudo chown -R dashboard:dashboard "$(pwd)"
+PROJECT_DIR="$(pwd)"
+chown -R dashboard:dashboard "$PROJECT_DIR"
+
+# ──────────────────────────────
+# Re-ejecutar como dashboard
+# ──────────────────────────────
+if [ "$USER" != "dashboard" ]; then
+  echo "🔄 Re-ejecutando setup como usuario 'dashboard'..."
+  exec sudo -u dashboard -H bash "$0"
+fi
 
 # ──────────────────────────────
 # Backend (Flask)
@@ -71,21 +87,17 @@ if [ -f "package.json" ]; then
   echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
   npm install -D tailwindcss postcss autoprefixer
 
-  # Generar config de Tailwind si no existe
   if [ ! -f "tailwind.config.js" ]; then
     npx tailwindcss init -p
     cat > tailwind.config.js << 'EOF'
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    extend: {},
-  },
+  theme: { extend: {} },
   plugins: [],
 };
 EOF
   fi
 
-  # Crear src/index.css si no existe
   if [ ! -f "src/index.css" ]; then
     mkdir -p src
     cat > src/index.css << 'EOF'
@@ -93,7 +105,6 @@ EOF
 @tailwind components;
 @tailwind utilities;
 
-/* estilos globales opcionales */
 body {
   @apply bg-gray-900 text-white;
 }
@@ -112,10 +123,8 @@ cat > start_flask.sh << 'EOF'
 cd backend
 source venv/bin/activate
 fuser -k 5000/tcp || true
-
 export FLASK_APP=wsgi.py
 export FLASK_ENV=development
-
 flask run --host=0.0.0.0 --port=5000
 EOF
 chmod +x start_flask.sh
@@ -134,5 +143,5 @@ chmod +x start_react.sh
 echo ""
 echo "✅ Setup completo!"
 echo "👉 Usuario de ejecución: dashboard"
-echo "👉 Levantar backend: sudo -u dashboard ./start_flask.sh"
-echo "👉 Levantar frontend: sudo -u dashboard ./start_react.sh"
+echo "👉 Levantar backend: ./start_flask.sh"
+echo "👉 Levantar frontend: ./start_react.sh"
