@@ -1,49 +1,44 @@
 #!/bin/bash
-set -e  # detener si algo falla
+set -e
 
-echo "🚀 Iniciando setup de Flask + React..."
+echo "🚀 Iniciando setup de servidor Flask + React..."
 
 # ──────────────────────────────
-# Backend (Flask / Python)
+# Paquetes base con apt
 # ──────────────────────────────
-echo "📦 Instalando dependencias de backend..."
+echo "📦 Instalando dependencias del sistema (apt)..."
 
+sudo apt update -y
+sudo apt install -y \
+  python3 python3-venv python3-pip \
+  nodejs npm git curl build-essential
+
+# ──────────────────────────────
+# Backend (Python)
+# ──────────────────────────────
+echo "📦 Backend (Flask)..."
 cd backend
-
-# Crear venv si no existe
 if [ ! -d "venv" ]; then
-  echo "➕ Creando entorno virtual..."
   python3 -m venv venv
 fi
-
-# Activar venv y pip install
 source venv/bin/activate
-if [ -f "requirements.txt" ]; then
-  pip install --upgrade pip
-  pip install -r requirements.txt
-else
-  echo "⚠️ No se encontró requirements.txt"
-fi
+pip install --upgrade pip
+[ -f "requirements.txt" ] && pip install -r requirements.txt
 deactivate
 cd ..
 
 # ──────────────────────────────
-# Frontend (React / Vite)
+# Frontend (React)
 # ──────────────────────────────
-echo "📦 Instalando dependencias de frontend..."
-
+echo "📦 Frontend (React)..."
 cd frontend
-if [ -f "package.json" ]; then
-  npm install
-else
-  echo "⚠️ No se encontró package.json"
-fi
+[ -f "package.json" ] && npm install
 cd ..
 
 # ──────────────────────────────
-# Crear scripts de inicio locales
+# Scripts de inicio
 # ──────────────────────────────
-echo "⚙️ Creando scripts de inicio..."
+echo "⚙️ Creando scripts de inicio locales..."
 
 cat > start_flask.sh << 'EOF'
 #!/bin/bash
@@ -62,4 +57,4 @@ npm run dev -- --host 0.0.0.0 --port 5173
 EOF
 chmod +x start_react.sh
 
-echo "✅ Setup completo. Usá ./start_flask.sh y ./start_react.sh para iniciar los servicios."
+echo "✅ Setup completo. Usa ./start_flask.sh y ./start_react.sh"
