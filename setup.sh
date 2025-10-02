@@ -4,41 +4,50 @@ set -e
 echo "🚀 Iniciando setup de servidor Flask + React..."
 
 # ──────────────────────────────
-# Paquetes base con apt
+# Paquetes base con apt (sudo)
 # ──────────────────────────────
-echo "📦 Instalando dependencias del sistema (apt)..."
+if command -v apt >/dev/null 2>&1; then
+  echo "📦 Instalando dependencias del sistema con apt..."
+  sudo apt update -y
+  sudo apt install -y \
+    python3 python3-venv python3-pip \
+    nodejs npm git curl build-essential
+else
+  echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
+fi
 
-sudo apt update -y
-sudo apt install -y \
-  python3 python3-venv python3-pip \
-  nodejs npm git curl build-essential
+# ──────────────────────────────
+# Backend (Python, sin sudo)
+# ──────────────────────────────
+echo "📦 Configurando backend (Flask)..."
 
-# ──────────────────────────────
-# Backend (Python)
-# ──────────────────────────────
-echo "📦 Backend (Flask)..."
 cd backend
+
 if [ ! -d "venv" ]; then
+  echo "➕ Creando entorno virtual en backend/venv"
   python3 -m venv venv
 fi
+
 source venv/bin/activate
 pip install --upgrade pip
 [ -f "requirements.txt" ] && pip install -r requirements.txt
 deactivate
+
 cd ..
 
 # ──────────────────────────────
-# Frontend (React)
+# Frontend (Node, sin sudo)
 # ──────────────────────────────
-echo "📦 Frontend (React)..."
+echo "📦 Configurando frontend (React)..."
+
 cd frontend
 [ -f "package.json" ] && npm install
 cd ..
 
 # ──────────────────────────────
-# Scripts de inicio
+# Scripts de inicio (sin sudo)
 # ──────────────────────────────
-echo "⚙️ Creando scripts de inicio locales..."
+echo "⚙️ Creando scripts de inicio..."
 
 cat > start_flask.sh << 'EOF'
 #!/bin/bash
