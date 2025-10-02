@@ -15,3 +15,5 @@ requests==2.31.0
 # --- Utilidades ---
 gunicorn==21.2.0          # Para producción con WSGI
 psutil==5.9.8
+
+py-cpuinfo

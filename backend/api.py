@@ -1,40 +1,60 @@
 from flask import Blueprint, jsonify
 import psutil
+import platform
 
-bp = Blueprint("api", __name__, url_prefix="/api")
+try:
+    import cpuinfo  # pip install py-cpuinfo
+except ImportError:
+    cpuinfo = None
 
-# 👉 Ahora la raíz del blueprint (/api) devuelve el mensaje
-@bp.route("", methods=["GET"])
+# strict_slashes=False permite que /api/stats y /api/stats/ funcionen igual
+bp = Blueprint("api", __name__, url_prefix="/api", strict_slashes=False)
+
+
 @bp.route("/", methods=["GET"])
 def root():
     return jsonify({"message": "Hola desde Flask 👋"})
 
+
 @bp.route("/stats", methods=["GET"])
-@bp.route("/stats/", methods=["GET"])
 def stats():
     try:
+        # CPU
         cpu_percent = psutil.cpu_percent(interval=0.5)
+        cpu_model = None
+        if cpuinfo:
+            cpu_model = cpuinfo.get_cpu_info().get("brand_raw", None)
+        if not cpu_model:
+            cpu_model = platform.processor() or "Unknown CPU"
 
+        # RAM
         memory = psutil.virtual_memory()
         memory_percent = memory.percent
+        memory_total_gb = round(memory.total / (1024**3), 2)  # en GB
 
+        # Disco
         disk = psutil.disk_usage("/")
         disk_percent = disk.percent
+        disk_total_gb = round(disk.total / (1024**3), 2)  # en GB
 
+        # Temperatura (si está disponible en Linux)
         temps = psutil.sensors_temperatures()
         cpu_temp = None
-        if temps and "coretemp" in temps:
-            cpu_temp = temps["coretemp"][0].current
-        elif temps:
-            first_key = list(temps.keys())[0]
-            cpu_temp = temps[first_key][0].current
+        if temps:
+            if "coretemp" in temps:
+                cpu_temp = temps["coretemp"][0].current
+            else:
+                first_key = list(temps.keys())[0]
+                cpu_temp = temps[first_key][0].current
 
         return jsonify({
+            "cpu_model": cpu_model,
             "cpu_percent": cpu_percent,
             "cpu_temp": cpu_temp,
             "memory_percent": memory_percent,
-            "disk_percent": disk_percent
+            "memory_total_gb": memory_total_gb,
+            "disk_percent": disk_percent,
+            "disk_total_gb": disk_total_gb,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
