@@ -12,7 +12,7 @@ function App() {
 
   return (
     <div>
-      <h1>React + Flask</h1>
+      <h1>React + Flask dashboard</h1>
       <p>Respuesta de la API: {msg}</p>
     </div>
   );
