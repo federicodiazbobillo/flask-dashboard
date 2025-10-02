@@ -39,9 +39,9 @@ deactivate
 cd ..
 
 # ──────────────────────────────
-# Frontend (React)
+# Frontend (React + Tailwind)
 # ──────────────────────────────
-echo "📦 Configurando frontend (React)..."
+echo "📦 Configurando frontend (React + Tailwind)..."
 
 cd frontend
 if [ -f "package.json" ]; then
@@ -53,6 +53,39 @@ if [ -f "package.json" ]; then
 
   echo "➕ Instalando dependencias extra del dashboard..."
   npm install react-gauge-chart
+
+  echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
+  npm install -D tailwindcss postcss autoprefixer
+
+  # Generar config de Tailwind si no existe
+  if [ ! -f "tailwind.config.js" ]; then
+    npx tailwindcss init -p
+    # Sobrescribir contenido básico
+    cat > tailwind.config.js << 'EOF'
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+EOF
+  fi
+
+  # Crear src/index.css si no existe
+  if [ ! -f "src/index.css" ]; then
+    mkdir -p src
+    cat > src/index.css << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* estilos globales opcionales */
+body {
+  @apply bg-gray-900 text-white;
+}
+EOF
+  fi
 fi
 cd ..
 
