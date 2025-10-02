@@ -4,7 +4,7 @@ function App() {
   const [msg, setMsg] = useState("cargando...");
 
   useEffect(() => {
-    fetch("http://192.168.2.194:5000/api/hello")   // 👈 usa la IP del servidor remoto
+    fetch("/api/hello")   // 👈 usa la IP del servidor remoto
       .then(res => res.json())
       .then(data => setMsg(data.message))
       .catch(err => setMsg("❌ Error: " + err.message));
