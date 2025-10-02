@@ -187,3 +187,4 @@ echo "✅ Setup completo!"
 echo "👉 Usuario de ejecución: dashboard"
 echo "👉 Levantar backend: ./start_flask.sh"
 echo "👉 Levantar frontend: ./start_react.sh"
+ 
