@@ -122,3 +122,4 @@ echo ""
 echo "✅ Setup completo!"
 echo "👉 Levantar backend: ./start_flask.sh"
 echo "👉 Levantar frontend: ./start_react.sh"
+ 
