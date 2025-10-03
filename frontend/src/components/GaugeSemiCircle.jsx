@@ -2,63 +2,60 @@ import React from "react";
 
 function GaugeSemiCircle({ value }) {
   const clamped = Math.max(0, Math.min(100, value));
+  const cx = 110, cy = 110, r = 90;
 
-  const cx = 100;
-  const cy = 100;
-  const r = 80;
-
-  // Convierte ángulo a coordenadas cartesianas
-  const polarToCartesian = (cx, cy, r, angle) => {
-    const rad = (angle - 90) * (Math.PI / 180.0);
-    return {
-      x: cx + r * Math.cos(rad),
-      y: cy + r * Math.sin(rad),
-    };
+  // Utilidades
+  const degFromPct = (p) => -90 + p * 180; // 0→-90°, 1→+90°
+  const polar = (cx, cy, r, angleDeg) => {
+    const rad = (angleDeg - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+  const arc = (startDeg, endDeg) => {
+    const s = polar(cx, cy, r, endDeg);
+    const e = polar(cx, cy, r, startDeg);
+    const large = endDeg - startDeg <= 180 ? 0 : 1;
+    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`;
   };
 
-  // Genera arco entre ángulos
-  const describeArc = (startAngle, endAngle) => {
-    const start = polarToCartesian(cx, cy, r, endAngle);
-    const end = polarToCartesian(cx, cy, r, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  // Límites de segmentos
+  const A0 = degFromPct(0);
+  const A70 = degFromPct(0.7);
+  const A90 = degFromPct(0.9);
+  const A100 = degFromPct(1);
 
-    return [
-      "M",
-      start.x,
-      start.y,
-      "A",
-      r,
-      r,
-      0,
-      largeArcFlag,
-      0,
-      end.x,
-      end.y,
-    ].join(" ");
-  };
+  // Pequeño gap visual (en grados) para separar segmentos
+  const GAP = 2;
 
-  // Arcos fijos (segmentos)
-  const greenArc = describeArc(-90, -36);   // 0-70%
-  const yellowArc = describeArc(-36, 54);   // 70-90%
-  const redArc = describeArc(54, 90);       // 90-100%
+  const greenArc  = arc(A0,    A70 - GAP / 2);
+  const yellowArc = arc(A70 + GAP / 2, A90 - GAP / 2);
+  const redArc    = arc(A90 + GAP / 2, A100);
 
-  // Progreso dinámico
-  const progressArc = describeArc(-90, (clamped / 100) * 180 - 90);
+  const progressEnd = degFromPct(clamped / 100);
+  const progressArc = arc(A0, progressEnd);
 
   return (
-    <svg viewBox="0 0 200 120" className="w-full h-32">
+    <svg
+      viewBox="0 0 220 130"
+      className="w-full h-32"
+      preserveAspectRatio="xMidYMid meet"
+      style={{ overflow: "visible" }}
+    >
       {/* Segmentos fijos */}
-      <path d={greenArc} fill="none" stroke="green" strokeWidth="20" />
-      <path d={yellowArc} fill="none" stroke="orange" strokeWidth="20" />
-      <path d={redArc} fill="none" stroke="red" strokeWidth="20" />
+      <path d={greenArc}  fill="none" stroke="green"  strokeWidth="18"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+      <path d={yellowArc} fill="none" stroke="orange" strokeWidth="18"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+      <path d={redArc}    fill="none" stroke="red"    strokeWidth="18"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
 
-      {/* Progreso en blanco encima */}
-      <path d={progressArc} fill="none" stroke="white" strokeWidth="6" />
+      {/* Progreso encima (blanco) */}
+      <path d={progressArc} fill="none" stroke="white" strokeWidth="6"
+            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
 
-      {/* Texto central */}
+      {/* Porcentaje */}
       <text
-        x="100"
-        y="115"
+        x={cx}
+        y={cy + 18}
         textAnchor="middle"
         fontSize="16"
         fill="white"
