@@ -1,107 +1,72 @@
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import React from "react";
 
-const GaugeSemiCircle = ({ value }) => {
-  const percent = Math.min(Math.max(value, 0), 100); // clamp 0-100
-  const angle = 180 - (percent / 100) * 180; // convertir valor a ángulo
+function GaugeSemiCircle({ value }) {
+  const clamped = Math.max(0, Math.min(100, value));
 
-  const COLORS = [
-    { max: 25, color: "#00ff00" }, // verde
-    { max: 50, color: "#ffff00" }, // amarillo
-    { max: 75, color: "#ff9900" }, // naranja
-    { max: 100, color: "#ff0000" }, // rojo
-  ];
+  // Ángulo entre -90° (izquierda) y +90° (derecha)
+  const angle = (clamped / 100) * 180 - 90;
 
-  // Particionar el arco en segmentos
-  const data = COLORS.map((seg, i) => {
-    const prev = i === 0 ? 0 : COLORS[i - 1].max;
-    return { value: seg.max - prev, color: seg.color };
-  });
+  // Posición de la aguja
+  const r = 90;
+  const rad = (angle * Math.PI) / 180;
+  const x = 100 + r * Math.cos(rad);
+  const y = 100 + r * Math.sin(rad);
 
   return (
-    <div style={{ width: "100%", height: 180, position: "relative" }}>
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            startAngle={180}
-            endAngle={0}
-            innerRadius={60}
-            outerRadius={80}
-            dataKey="value"
-            stroke="none"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-
+    <svg viewBox="0 0 200 120" className="w-full h-32">
+      {/* Fondo arco gris */}
+      <path
+        d="M 10 100 A 90 90 0 0 1 190 100"
+        fill="none"
+        stroke="#444"
+        strokeWidth="20"
+      />
+      {/* Verde */}
+      <path
+        d="M 40 100 A 60 60 0 0 1 100 40"
+        fill="none"
+        stroke="green"
+        strokeWidth="20"
+      />
+      {/* Amarillo */}
+      <path
+        d="M 100 40 A 60 60 0 0 1 160 100"
+        fill="none"
+        stroke="orange"
+        strokeWidth="20"
+      />
+      {/* Rojo */}
+      <path
+        d="M 160 100 A 60 60 0 0 1 190 100"
+        fill="none"
+        stroke="red"
+        strokeWidth="20"
+      />
       {/* Aguja */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "40px",
-          transform: `rotate(${angle}deg) translateX(-50%)`,
-          transformOrigin: "bottom center",
-          width: "4px",
-          height: "70px",
-          backgroundColor: "white",
-          borderRadius: "2px",
-        }}
+      <line
+        x1="100"
+        y1="100"
+        x2={x}
+        y2={y}
+        stroke="white"
+        strokeWidth="4"
+        strokeLinecap="round"
       />
-
-      {/* Pivote */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "35px",
-          transform: "translateX(-50%)",
-          width: "16px",
-          height: "16px",
-          backgroundColor: "white",
-          borderRadius: "50%",
-          border: "2px solid #333",
-        }}
-      />
-
-      {/* Valor numérico */}
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          textAlign: "center",
-          bottom: "-5px",
-          fontSize: "20px",
-          fontWeight: "bold",
-        }}
+      {/* Centro */}
+      <circle cx="100" cy="100" r="6" fill="white" />
+      {/* Texto */}
+      <text
+        x="100"
+        y="115"
+        textAnchor="middle"
+        fontSize="14"
+        fill="white"
+        fontWeight="bold"
       >
-        {percent.toFixed(1)}%
-      </div>
-
-      {/* Ticks */}
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          bottom: "10px",
-          textAlign: "center",
-          fontSize: "12px",
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "0 10px",
-        }}
-      >
-        <span>0</span>
-        <span>25</span>
-        <span>50</span>
-        <span>75</span>
-        <span>100</span>
-      </div>
-    </div>
+        {clamped.toFixed(1)}%
+      </text>
+    </svg>
   );
-};
+}
 
 export default GaugeSemiCircle;
