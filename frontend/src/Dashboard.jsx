@@ -13,6 +13,8 @@ function Dashboard() {
     disk_percent: 0,
     disk_total_gb: 0,
     disk_free_gb: 0,
+    gpus: [],
+    net: { interfaces: [] },
   });
 
   useEffect(() => {
@@ -30,6 +32,14 @@ function Dashboard() {
         const diskRes = await fetch("/api/server-info/storage/");
         const storage = await diskRes.json();
 
+        // GPU
+        const gpuRes = await fetch("/api/server-info/gpu/");
+        const gpu = await gpuRes.json();
+
+        // Red
+        const netRes = await fetch("/api/server-info/net/");
+        const net = await netRes.json();
+
         setStats({
           cpu_model: cpu.cpu_model,
           cpu_percent: cpu.cpu_percent,
@@ -41,6 +51,8 @@ function Dashboard() {
           disk_percent: storage.disk_percent,
           disk_total_gb: storage.disk_total_gb,
           disk_free_gb: storage.disk_free_gb,
+          gpus: gpu.gpus || [],
+          net: net || { interfaces: [] },
         });
       } catch (err) {
         console.error("Error al cargar stats:", err);
@@ -81,7 +93,8 @@ function Dashboard() {
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
         <h2 className="text-xl mb-2">Memoria RAM {memoryLabel}</h2>
         <p className="text-sm text-gray-400 mb-4">
-          Total: {stats.memory_total_gb} GB — Disponible: {stats.memory_available_gb} GB
+          Total: {stats.memory_total_gb} GB — Disponible:{" "}
+          {stats.memory_available_gb} GB
         </p>
         <GaugeChart
           id="mem-gauge"
@@ -129,6 +142,50 @@ function Dashboard() {
           arcWidth={0.3}
         />
         <p className="mt-2">Uso: {stats.disk_percent}%</p>
+      </div>
+
+      {/* GPU */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
+        <h2 className="text-xl mb-2">GPU</h2>
+        {stats.gpus && stats.gpus.length > 0 ? (
+          stats.gpus.map((gpu, i) => (
+            <div key={i} className="mb-4">
+              <p className="font-bold">{gpu.name}</p>
+              <GaugeChart
+                id={`gpu-${i}`}
+                nrOfLevels={20}
+                percent={gpu.load / 100}
+                colors={["#00ff00", "#ff0000"]}
+                arcWidth={0.3}
+              />
+              <p className="mt-1">Uso: {gpu.load}%</p>
+              <p className="mt-1">
+                Memoria: {gpu.memoryUsed} / {gpu.memoryTotal} MB
+              </p>
+              <p className="mt-1">Temp: {gpu.temperature} °C</p>
+            </div>
+          ))
+        ) : (
+          <p>No se detectaron GPUs</p>
+        )}
+      </div>
+
+      {/* Red */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
+        <h2 className="text-xl mb-2">Interfaces de Red</h2>
+        {stats.net.interfaces && stats.net.interfaces.length > 0 ? (
+          stats.net.interfaces.map((iface, i) => (
+            <div key={i} className="mb-2 p-2 rounded-lg bg-gray-700 text-xs">
+              <p className="font-bold">{iface.name}</p>
+              <p>IP: {iface.ip || "N/A"}</p>
+              <p>MAC: {iface.mac || "N/A"}</p>
+              <p>Velocidad: {iface.speed} Mbps</p>
+              <p>Estado: {iface.isup ? "Activo" : "Inactivo"}</p>
+            </div>
+          ))
+        ) : (
+          <p>No se detectaron interfaces de red</p>
+        )}
       </div>
     </div>
   );

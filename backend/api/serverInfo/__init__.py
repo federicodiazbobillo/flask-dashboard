@@ -1,11 +1,12 @@
-from flask import Blueprint
-from .cpu_info import bp as cpu_bp
-from .memory_info import bp as memory_bp
-from .storage_info import bp as storage_bp
+from .serverInfo.cpu_info import cpu_bp
+from .serverInfo.memory_info import memory_bp
+from .serverInfo.storage_info import storage_bp
+from .serverInfo.gpu_info import gpu_bp
+from .serverInfo.net_info import net_bp
 
-bp = Blueprint("server_info", __name__, url_prefix="/server-info")
-
-# Registrar sub-blueprints
-bp.register_blueprint(cpu_bp)
-bp.register_blueprint(memory_bp)
-bp.register_blueprint(storage_bp)
+def register_blueprints(app):
+    app.register_blueprint(cpu_bp)
+    app.register_blueprint(memory_bp)
+    app.register_blueprint(storage_bp)
+    app.register_blueprint(gpu_bp)
+    app.register_blueprint(net_bp)
