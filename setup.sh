@@ -135,14 +135,15 @@ cd ..
 
 # Scripts de inicio
 echo "⚙️ Creando scripts de inicio..."
+
 cat > start_flask.sh << 'EOF'
 #!/bin/bash
-cd backend
+# Forzar ejecución con usuario 'dashboard'
+if [ "$USER" != "dashboard" ]; then
+  exec sudo -u dashboard -H bash "$0" "$@"
+fi
 
-# Activar NVM y Node 22
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 22
+cd backend
 
 # Activar entorno Python
 source venv/bin/activate
@@ -163,6 +164,11 @@ chmod +x start_flask.sh
 
 cat > start_react.sh << 'EOF'
 #!/bin/bash
+# Forzar ejecución con usuario 'dashboard'
+if [ "$USER" != "dashboard" ]; then
+  exec sudo -u dashboard -H bash "$0" "$@"
+fi
+
 cd frontend
 
 # Activar NVM y Node 22
@@ -180,6 +186,7 @@ fi
 npm run dev -- --host 0.0.0.0 --port=5173
 EOF
 chmod +x start_react.sh
+
 
 # Resumen final
 echo ""
