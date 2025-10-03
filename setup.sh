@@ -27,6 +27,7 @@ done
 # ──────────────────────────────
 # FASE ROOT
 # ──────────────────────────────
+if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
   if command -v apt >/dev/null 2>&1; then
     echo "📦 Instalando dependencias del sistema con apt..."
     apt update -y
@@ -34,17 +35,19 @@ done
       python3 python3-venv python3-pip \
       git curl build-essential \
       dmidecode lshw hwinfo psmisc lsof \
-      nvidia-cuda-toolkit   # 📌 agregado aquí
+      nvidia-cuda-toolkit
   else
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
   fi
+
   if ! id -u dashboard >/dev/null 2>&1; then
     echo "👤 Creando usuario 'dashboard'..."
     useradd -m -s /bin/bash dashboard
   fi
 
   echo "🔑 Configurando sudoers para usuario 'dashboard'..."
-  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo, /usr/bin/lsof, /bin/kill" | tee /etc/sudoers.d/dashboard >/dev/null
+  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo, /usr/bin/lsof, /bin/kill" \
+    | tee /etc/sudoers.d/dashboard >/dev/null
   chmod 440 /etc/sudoers.d/dashboard
 
   PROJECT_DIR="$(pwd)"
@@ -52,8 +55,8 @@ done
 
   echo "🔄 Re-ejecutando setup como usuario 'dashboard'..."
   exec sudo -u dashboard -H bash "$0"
-  exit 0  
-
+  exit 0
+fi
 
 # ──────────────────────────────
 # FASE USUARIO (dashboard)
@@ -104,7 +107,7 @@ if [ -f "package.json" ]; then
 
   echo "➕ Instalando dependencias extra del dashboard..."
   npm install react-gauge-chart
-  npm install recharts   # 📌 Nuevo: instalamos Recharts
+  npm install recharts
 
   echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
   npm install -D tailwindcss postcss autoprefixer
