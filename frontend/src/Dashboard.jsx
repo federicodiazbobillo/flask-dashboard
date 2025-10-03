@@ -92,8 +92,8 @@ function Dashboard() {
         />
         <p className="mt-2">Uso: {stats.memory_percent}%</p>
 
-        {/* Slots de memoria */}
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        {/* Slots de memoria (verticales como el mother) */}
+        <div className="mt-4 flex flex-col gap-2">
           {stats.memory_slots.map((slot, i) => (
             <div
               key={i}
