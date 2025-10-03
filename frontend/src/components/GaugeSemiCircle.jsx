@@ -3,100 +3,69 @@ import React from "react";
 function GaugeSemiCircle({ value }) {
   const clamped = Math.max(0, Math.min(100, value));
 
-  // Ángulo entre -90° (izquierda) y +90° (derecha)
-  const angle = (clamped / 100) * 180 - 90;
+  const cx = 100;
+  const cy = 100;
+  const r = 80;
 
-  // Centro y radio
-  const cx = 150;
-  const cy = 150;
-  const r = 120;
+  // Función para calcular coordenadas de un punto en el arco
+  const polarToCartesian = (cx, cy, r, angle) => {
+    const rad = (angle * Math.PI) / 180.0;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad),
+    };
+  };
 
-  // Posición de la aguja
-  const rad = (angle * Math.PI) / 180;
-  const x = cx + r * Math.cos(rad);
-  const y = cy + r * Math.sin(rad);
+  // Función para describir un arco entre ángulos
+  const describeArc = (startAngle, endAngle) => {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+    return [
+      "M",
+      start.x,
+      start.y,
+      "A",
+      r,
+      r,
+      0,
+      largeArcFlag,
+      0,
+      end.x,
+      end.y,
+    ].join(" ");
+  };
+
+  // El gauge va de -90° a +90° (semicírculo)
+  const totalArc = describeArc(-90, 90);
+  const progressArc = describeArc(-90, (clamped / 100) * 180 - 90);
+
+  // Color dinámico
+  let color = "green";
+  if (clamped > 70) color = "orange";
+  if (clamped > 90) color = "red";
 
   return (
-    <svg viewBox="0 0 300 180" className="w-full h-40">
-      {/* Arco de fondo */}
-      <path
-        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-        fill="none"
-        stroke="#333"
-        strokeWidth="20"
-      />
+    <svg viewBox="0 0 200 120" className="w-full h-32">
+      {/* Fondo */}
+      <path d={totalArc} fill="none" stroke="#333" strokeWidth="20" />
 
-      {/* Verde (0-60%) */}
-      <path
-        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx} ${cy - r}`}
-        fill="none"
-        stroke="green"
-        strokeWidth="20"
-      />
+      {/* Progreso */}
+      <path d={progressArc} fill="none" stroke={color} strokeWidth="20" />
 
-      {/* Amarillo (60-85%) */}
-      <path
-        d={`M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx + (r * 0.87)} ${cy + (r * 0.5)}`}
-        fill="none"
-        stroke="orange"
-        strokeWidth="20"
-      />
-
-      {/* Rojo (85-100%) */}
-      <path
-        d={`M ${cx + (r * 0.87)} ${cy + (r * 0.5)} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-        fill="none"
-        stroke="red"
-        strokeWidth="20"
-      />
-
-      {/* Aguja */}
-      <line
-        x1={cx}
-        y1={cy}
-        x2={x}
-        y2={y}
-        stroke="white"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-
-      {/* Centro de la aguja */}
-      <circle cx={cx} cy={cy} r="8" fill="white" />
-
-      {/* Texto con valor */}
+      {/* Texto central */}
       <text
-        x={cx}
-        y={cy + 30}
+        x="100"
+        y="110"
         textAnchor="middle"
-        fontSize="20"
+        fontSize="16"
         fill="white"
         fontWeight="bold"
       >
         {clamped.toFixed(1)}%
       </text>
-
-      {/* Ticks (marcas cada 20%) */}
-      {[0, 20, 40, 60, 80, 100].map((t) => {
-        const a = (t / 100) * 180 - 90;
-        const radTick = (a * Math.PI) / 180;
-        const x1 = cx + (r - 15) * Math.cos(radTick);
-        const y1 = cy + (r - 15) * Math.sin(radTick);
-        const x2 = cx + (r + 5) * Math.cos(radTick);
-        const y2 = cy + (r + 5) * Math.sin(radTick);
-
-        return (
-          <line
-            key={t}
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke="white"
-            strokeWidth="2"
-          />
-        );
-      })}
     </svg>
   );
 }
