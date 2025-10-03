@@ -1,60 +1,102 @@
 import { useEffect, useState } from "react";
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
 
-// 🔥 Gauge tipo velocímetro
-function SpeedometerGauge({ value }) {
-  // Segmentos de colores
+/* ===========================
+   Velocímetro semicircular (SVG)
+   =========================== */
+function Speedometer({
+  value = 0,
+  size = 220,
+  strokeWidth = 16,
+  thresholds = [50, 75, 90],              // cortes de color
+  colors = ["#10B981", "#FBBF24", "#F97316", "#EF4444"], // verde, amarillo, naranja, rojo
+}) {
+  const clamp = (v) => Math.max(0, Math.min(100, Number.isFinite(v) ? v : 0));
+  const val = clamp(value);
+
+  // geometría
+  const cx = size / 2;
+  const cy = size * 0.9;                 // centro un poco abajo para que entre la media luna
+  const r = size * 0.8 * 0.5;            // radio con margen
+
+  const toAngle = (pct) => 180 - (pct / 100) * 180; // 0%->180°, 100%->0°
+
+  const polar = (cx, cy, r, angDeg) => {
+    const rad = (angDeg - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  const arcPath = (cx, cy, r, startAng, endAng) => {
+    const start = polar(cx, cy, r, endAng);
+    const end = polar(cx, cy, r, startAng);
+    const largeArc = Math.abs(endAng - startAng) > 180 ? 1 : 0;
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
+  };
+
+  // tramos de color
   const segments = [
-    { value: 50, fill: "#00ff00" }, // Verde 0–50%
-    { value: 25, fill: "#ffff00" }, // Amarillo 50–75%
-    { value: 15, fill: "#ffa500" }, // Naranja 75–90%
-    { value: 10, fill: "#ff0000" }, // Rojo 90–100%
+    { from: 0, to: thresholds[0], color: colors[0] },
+    { from: thresholds[0], to: thresholds[1], color: colors[1] },
+    { from: thresholds[1], to: thresholds[2], color: colors[2] },
+    { from: thresholds[2], to: 100, color: colors[3] },
   ];
 
-  // Puntero del valor actual
-  const pointer = [{ value, fill: "#ffffff" }];
+  // aguja
+  const angle = toAngle(val);
+  const needleLen = r;                    // largo de aguja
+  const tip = polar(cx, cy, needleLen, angle);
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <RadialBarChart
-        cx="50%"
-        cy="100%"
-        innerRadius="20%"
-        outerRadius="100%"
-        barSize={20}
-        startAngle={180}
-        endAngle={0}
-        data={segments}
-      >
-        <PolarAngleAxis
-          type="number"
-          domain={[0, 100]}
-          angleAxisId={0}
-          tick={false}
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      className="w-full"
+      style={{ height: 160 }}
+    >
+      {/* track gris de fondo */}
+      <path
+        d={arcPath(cx, cy, r, 180, 0)}
+        stroke="#374151"
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* tramos de color */}
+      {segments.map((s, i) => (
+        <path
+          key={i}
+          d={arcPath(cx, cy, r, toAngle(s.from), toAngle(s.to))}
+          stroke={s.color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="butt"
         />
-        {/* Fondo de colores */}
-        <RadialBar dataKey="value" clockWise stackId="a" />
-        {/* Puntero blanco */}
-        <RadialBar data={pointer} dataKey="value" clockWise cornerRadius={10} />
-      </RadialBarChart>
-    </ResponsiveContainer>
+      ))}
+
+      {/* aguja */}
+      <line
+        x1={cx}
+        y1={cy}
+        x2={tip.x}
+        y2={tip.y}
+        stroke="#ffffff"
+        strokeWidth="4"
+      />
+      {/* tapa del eje */}
+      <circle cx={cx} cy={cy} r="6" fill="#e5e7eb" />
+    </svg>
   );
 }
 
-// 📦 Componente Card genérico
+/* ===========================
+   Card genérica con gauge
+   =========================== */
 function GaugeCard({ title, value, unit = "%", subtitle, children }) {
   return (
     <div className="bg-gray-800 p-6 rounded-xl shadow-md">
       <h2 className="text-xl mb-2">{title}</h2>
       {subtitle && <p className="text-sm text-gray-400 mb-2">{subtitle}</p>}
-      <SpeedometerGauge value={value} />
+      <Speedometer value={value} />
       <p className="mt-2 text-center font-bold">
-        {value}
+        {Number.isFinite(value) ? value : 0}
         {unit}
       </p>
       {children && <div className="mt-4 text-sm">{children}</div>}
@@ -62,6 +104,9 @@ function GaugeCard({ title, value, unit = "%", subtitle, children }) {
   );
 }
 
+/* ===========================
+   Dashboard
+   =========================== */
 function Dashboard() {
   const [stats, setStats] = useState({
     cpu: {
@@ -169,7 +214,7 @@ function Dashboard() {
         </p>
         <p>
           Load Avg:{" "}
-          {stats.cpu.load_avg && stats.cpu.load_avg.length
+          {stats.cpu.load_avg?.length
             ? stats.cpu.load_avg.map((l) => l.toFixed(2)).join(" | ")
             : "N/A"}
         </p>
@@ -221,7 +266,7 @@ function Dashboard() {
       {/* GPU */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
         <h2 className="text-xl mb-2">GPU</h2>
-        {stats.gpus && stats.gpus.length > 0 ? (
+        {stats.gpus?.length ? (
           stats.gpus.map((gpu, i) => (
             <GaugeCard
               key={i}
@@ -238,7 +283,7 @@ function Dashboard() {
       {/* Red */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
         <h2 className="text-xl mb-2">Interfaces de Red</h2>
-        {stats.net.interfaces && stats.net.interfaces.length > 0 ? (
+        {stats.net.interfaces?.length ? (
           stats.net.interfaces.map((iface, i) => (
             <div key={i} className="mb-2 p-2 rounded-lg bg-gray-700 text-xs">
               <p className="font-bold">{iface.name}</p>
