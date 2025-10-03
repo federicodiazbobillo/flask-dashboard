@@ -7,16 +7,16 @@ function GaugeSemiCircle({ value }) {
   const cy = 100;
   const r = 80;
 
-  // convierte ángulo a coordenadas cartesianas
+  // Convierte ángulo a coordenadas cartesianas
   const polarToCartesian = (cx, cy, r, angle) => {
-    const rad = (angle - 90) * (Math.PI / 180.0); // ajustar para que -90 sea izquierda, +90 derecha
+    const rad = (angle - 90) * (Math.PI / 180.0);
     return {
       x: cx + r * Math.cos(rad),
       y: cy + r * Math.sin(rad),
     };
   };
 
-  // genera arco de startAngle a endAngle
+  // Genera arco entre ángulos
   const describeArc = (startAngle, endAngle) => {
     const start = polarToCartesian(cx, cy, r, endAngle);
     const end = polarToCartesian(cx, cy, r, startAngle);
@@ -37,24 +37,25 @@ function GaugeSemiCircle({ value }) {
     ].join(" ");
   };
 
-  // arco de fondo (-90 a +90 → semicirc)
-  const totalArc = describeArc(-90, 90);
-  const progressArc = describeArc(-90, (clamped / 100) * 180 - 90);
+  // Arcos fijos (segmentos)
+  const greenArc = describeArc(-90, -36);   // 0-70%
+  const yellowArc = describeArc(-36, 54);   // 70-90%
+  const redArc = describeArc(54, 90);       // 90-100%
 
-  // color dinámico
-  let color = "green";
-  if (clamped > 70) color = "orange";
-  if (clamped > 90) color = "red";
+  // Progreso dinámico
+  const progressArc = describeArc(-90, (clamped / 100) * 180 - 90);
 
   return (
     <svg viewBox="0 0 200 120" className="w-full h-32">
-      {/* arco fondo */}
-      <path d={totalArc} fill="none" stroke="#333" strokeWidth="20" />
+      {/* Segmentos fijos */}
+      <path d={greenArc} fill="none" stroke="green" strokeWidth="20" />
+      <path d={yellowArc} fill="none" stroke="orange" strokeWidth="20" />
+      <path d={redArc} fill="none" stroke="red" strokeWidth="20" />
 
-      {/* progreso */}
-      <path d={progressArc} fill="none" stroke={color} strokeWidth="20" />
+      {/* Progreso en blanco encima */}
+      <path d={progressArc} fill="none" stroke="white" strokeWidth="6" />
 
-      {/* texto */}
+      {/* Texto central */}
       <text
         x="100"
         y="115"
