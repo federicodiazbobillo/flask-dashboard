@@ -175,30 +175,49 @@ function Dashboard() {
         <p className="mt-2">Uso: {stats.storage.disk_percent}%</p>
       </div>
 
-      {/* GPU */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+        {/* GPU */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md">
         <h2 className="text-xl mb-2">GPU</h2>
         {stats.gpus && stats.gpus.length > 0 ? (
-          stats.gpus.map((gpu, i) => (
-            <div key={i} className="mb-4">
-              <p className="font-bold">{gpu.name}</p>
+            stats.gpus.map((gpu, i) => (
+            <div key={i} className="mb-6 border-b border-gray-700 pb-4">
+                <p className="font-bold text-lg">{gpu.name}</p>
 
-              <GaugeSemiCircle value={gpu.load} />
+                {/* Medidor de carga */}
+                <GaugeSemiCircle value={gpu.load} />
 
-              <p className="mt-1">Uso: {gpu.load}%</p>
-              <p className="mt-1">
+                {/* Info básica */}
+                <p className="mt-2">Uso: {gpu.load}%</p>
+                <p>
                 Memoria: {gpu.memoryUsed} / {gpu.memoryTotal} MB
-              </p>
-              <p className="mt-1">
+                </p>
+                <p>
                 Temp:{" "}
                 {gpu.temperature !== null ? `${gpu.temperature} °C` : "N/A"}
-              </p>
+                </p>
+
+                {/* Info adicional */}
+                <p>
+                Cooler:{" "}
+                {gpu.fan_speed !== null ? `${gpu.fan_speed}%` : "N/A"}
+                </p>
+                <p>
+                Consumo:{" "}
+                {gpu.power_draw_watts !== null
+                    ? `${gpu.power_draw_watts} W (~${gpu.power_draw_amperes_est} A)`
+                    : "N/A"}{" "}
+                / Límite:{" "}
+                {gpu.power_limit_watts !== null
+                    ? `${gpu.power_limit_watts} W`
+                    : "N/A"}
+                </p>
             </div>
-          ))
+            ))
         ) : (
-          <p>No se detectaron GPUs</p>
+            <p>No se detectaron GPUs</p>
         )}
-      </div>
+        </div>
+
 
       {/* Red */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
