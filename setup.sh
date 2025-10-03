@@ -12,6 +12,19 @@ if [ "$EUID" -ne 0 ] && [ "$USER" != "dashboard" ]; then
 fi
 
 # ──────────────────────────────
+# Limpiar puertos antes de iniciar
+# ──────────────────────────────
+echo "🛑 Verificando procesos en puertos 5000 y 5173..."
+
+for PORT in 5000 5173; do
+  PID=$(sudo lsof -t -i:$PORT || true)
+  if [ -n "$PID" ]; then
+    echo "🔪 Matando proceso en puerto $PORT (PID $PID)"
+    sudo kill -9 $PID || true
+  fi
+done
+
+# ──────────────────────────────
 # FASE ROOT
 # ──────────────────────────────
 if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
@@ -35,7 +48,7 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
 
   # Sudoers para comandos de hardware
   echo "🔑 Configurando sudoers para usuario 'dashboard'..."
-  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo" | tee /etc/sudoers.d/dashboard >/dev/null
+  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo, /usr/bin/lsof, /bin/kill" | tee /etc/sudoers.d/dashboard >/dev/null
   chmod 440 /etc/sudoers.d/dashboard
 
   # Permisos del proyecto
@@ -144,15 +157,13 @@ if [ "$USER" != "dashboard" ]; then
 fi
 
 cd backend
-
-# Activar entorno Python
 source venv/bin/activate
 
-# Matar procesos previos en el puerto 5000
-PID=$(lsof -t -i:5000)
+# Matar procesos previos en el puerto 5000 (agresivo)
+PID=$(sudo lsof -t -i:5000)
 if [ -n "$PID" ]; then
   echo "🔪 Matando proceso en puerto 5000 (PID $PID)"
-  kill -9 $PID
+  sudo kill -9 $PID || true
 fi
 
 export FLASK_APP=wsgi.py
@@ -176,17 +187,16 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 nvm use 22
 
-# Matar procesos previos en el puerto 5173
-PID=$(lsof -t -i:5173)
+# Matar procesos previos en el puerto 5173 (agresivo)
+PID=$(sudo lsof -t -i:5173)
 if [ -n "$PID" ]; then
   echo "🔪 Matando proceso en puerto 5173 (PID $PID)"
-  kill -9 $PID
+  sudo kill -9 $PID || true
 fi
 
 npm run dev -- --host 0.0.0.0 --port=5173
 EOF
 chmod +x start_react.sh
-
 
 # Resumen final
 echo ""
@@ -194,4 +204,3 @@ echo "✅ Setup completo!"
 echo "👉 Usuario de ejecución: dashboard"
 echo "👉 Levantar backend: ./start_flask.sh"
 echo "👉 Levantar frontend: ./start_react.sh"
- 
