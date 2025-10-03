@@ -7,20 +7,19 @@ function GaugeSemiCircle({ value }) {
   const cy = 100;
   const r = 80;
 
-  // Función para calcular coordenadas de un punto en el arco
+  // convierte ángulo a coordenadas cartesianas
   const polarToCartesian = (cx, cy, r, angle) => {
-    const rad = (angle * Math.PI) / 180.0;
+    const rad = (angle - 90) * (Math.PI / 180.0); // ajustar para que -90 sea izquierda, +90 derecha
     return {
       x: cx + r * Math.cos(rad),
       y: cy + r * Math.sin(rad),
     };
   };
 
-  // Función para describir un arco entre ángulos
+  // genera arco de startAngle a endAngle
   const describeArc = (startAngle, endAngle) => {
     const start = polarToCartesian(cx, cy, r, endAngle);
     const end = polarToCartesian(cx, cy, r, startAngle);
-
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
     return [
@@ -38,27 +37,27 @@ function GaugeSemiCircle({ value }) {
     ].join(" ");
   };
 
-  // El gauge va de -90° a +90° (semicírculo)
+  // arco de fondo (-90 a +90 → semicirc)
   const totalArc = describeArc(-90, 90);
   const progressArc = describeArc(-90, (clamped / 100) * 180 - 90);
 
-  // Color dinámico
+  // color dinámico
   let color = "green";
   if (clamped > 70) color = "orange";
   if (clamped > 90) color = "red";
 
   return (
     <svg viewBox="0 0 200 120" className="w-full h-32">
-      {/* Fondo */}
+      {/* arco fondo */}
       <path d={totalArc} fill="none" stroke="#333" strokeWidth="20" />
 
-      {/* Progreso */}
+      {/* progreso */}
       <path d={progressArc} fill="none" stroke={color} strokeWidth="20" />
 
-      {/* Texto central */}
+      {/* texto */}
       <text
         x="100"
-        y="110"
+        y="115"
         textAnchor="middle"
         fontSize="16"
         fill="white"
