@@ -17,21 +17,17 @@ function GaugeSemiCircle({ value }) {
     return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`;
   };
 
-  // Límites de segmentos
-  const A0 = degFromPct(0);
-  const A70 = degFromPct(0.7);
-  const A90 = degFromPct(0.9);
-  const A100 = degFromPct(1);
+  // Fondo semicircular (0–100%)
+  const fullArc = arc(degFromPct(0), degFromPct(1));
 
-  // Pequeño gap visual (en grados) para separar segmentos
-  const GAP = 2;
-
-  const greenArc  = arc(A0,    A70 - GAP / 2);
-  const yellowArc = arc(A70 + GAP / 2, A90 - GAP / 2);
-  const redArc    = arc(A90 + GAP / 2, A100);
-
+  // Progreso dinámico
   const progressEnd = degFromPct(clamped / 100);
-  const progressArc = arc(A0, progressEnd);
+  const progressArc = arc(degFromPct(0), progressEnd);
+
+  // Color del progreso
+  let color = "green";
+  if (clamped > 70) color = "orange";
+  if (clamped > 90) color = "red";
 
   return (
     <svg
@@ -40,19 +36,27 @@ function GaugeSemiCircle({ value }) {
       preserveAspectRatio="xMidYMid meet"
       style={{ overflow: "visible" }}
     >
-      {/* Segmentos fijos */}
-      <path d={greenArc}  fill="none" stroke="green"  strokeWidth="18"
-            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
-      <path d={yellowArc} fill="none" stroke="orange" strokeWidth="18"
-            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
-      <path d={redArc}    fill="none" stroke="red"    strokeWidth="18"
-            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+      {/* Fondo gris claro */}
+      <path
+        d={fullArc}
+        fill="none"
+        stroke="#555"   // gris más claro que el fondo
+        strokeWidth="18"
+        vectorEffect="non-scaling-stroke"
+        strokeLinecap="round"
+      />
 
-      {/* Progreso encima (blanco) */}
-      <path d={progressArc} fill="none" stroke="white" strokeWidth="6"
-            vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+      {/* Progreso dinámico */}
+      <path
+        d={progressArc}
+        fill="none"
+        stroke={color}
+        strokeWidth="18"
+        vectorEffect="non-scaling-stroke"
+        strokeLinecap="round"
+      />
 
-      {/* Porcentaje */}
+      {/* Texto central */}
       <text
         x={cx}
         y={cy + 18}
