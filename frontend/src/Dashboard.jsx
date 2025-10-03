@@ -99,7 +99,7 @@ function Dashboard() {
               {slot.status === "Occupied" ? (
                 <>
                   <p>{slot.size_gb} GB</p>
-                  <p className="truncate">{slot.part_number}</p>
+                  <p className="truncate">{slot.manufacturer}</p>
                 </>
               ) : (
                 <p className="italic text-gray-400">Vacío</p>
