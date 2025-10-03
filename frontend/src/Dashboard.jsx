@@ -9,6 +9,7 @@ function Dashboard() {
     memory_percent: 0,
     memory_total_gb: 0,
     memory_available_gb: 0,
+    memory_slots: [],
     disk_percent: 0,
     disk_total_gb: 0,
     disk_free_gb: 0,
@@ -36,6 +37,7 @@ function Dashboard() {
           memory_percent: memory.memory_percent,
           memory_total_gb: memory.memory_total_gb,
           memory_available_gb: memory.memory_available_gb,
+          memory_slots: memory.slots || [],
           disk_percent: storage.disk_percent,
           disk_total_gb: storage.disk_total_gb,
           disk_free_gb: storage.disk_free_gb,
@@ -83,6 +85,28 @@ function Dashboard() {
           arcWidth={0.3}
         />
         <p className="mt-2">Uso: {stats.memory_percent}%</p>
+
+        {/* Slots de memoria */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {stats.memory_slots.map((slot, i) => (
+            <div
+              key={i}
+              className={`p-2 rounded-lg text-center text-xs ${
+                slot.status === "Occupied" ? "bg-green-700" : "bg-gray-700"
+              }`}
+            >
+              <p className="font-bold">{slot.locator}</p>
+              {slot.status === "Occupied" ? (
+                <>
+                  <p>{slot.size_gb} GB</p>
+                  <p className="truncate">{slot.part_number}</p>
+                </>
+              ) : (
+                <p className="italic text-gray-400">Vacío</p>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Disco */}
