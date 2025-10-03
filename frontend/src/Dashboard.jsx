@@ -1,31 +1,65 @@
 import { useEffect, useState } from "react";
-import GaugeChart from "react-gauge-chart";
+import {
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ResponsiveContainer,
+} from "recharts";
+
+function GaugeCard({ title, value, color, unit = "%", subtitle }) {
+  const data = [{ name: title, value: value, fill: color }];
+
+  return (
+    <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+      <h2 className="text-xl mb-2">{title}</h2>
+      {subtitle && <p className="text-sm text-gray-400 mb-2">{subtitle}</p>}
+      <div className="w-full h-40">
+        <ResponsiveContainer>
+          <RadialBarChart
+            cx="50%"
+            cy="70%"
+            innerRadius="60%"
+            outerRadius="100%"
+            barSize={15}
+            data={data}
+            startAngle={180}
+            endAngle={0}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              angleAxisId={0}
+              tick={false}
+            />
+            <RadialBar
+              minAngle={15}
+              clockWise
+              dataKey="value"
+              cornerRadius={10}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="mt-2 text-center font-bold">
+        {value}
+        {unit}
+      </p>
+    </div>
+  );
+}
 
 function Dashboard() {
   const [stats, setStats] = useState({
-    cpu: {
-      model: "Detectando...",
-      cores_physical: 0,
-      cores_logical: 0,
-      cpu_percent_total: 0,
-      cpu_percent_per_core: [],
-      freq_current_mhz: null,
-      freq_min_mhz: null,
-      freq_max_mhz: null,
-      load_avg: [],
-      temperature_c: null,
-    },
-    memory: {
-      memory_percent: 0,
-      memory_total_gb: 0,
-      memory_available_gb: 0,
-      memory_slots: [],
-    },
-    storage: {
-      disk_percent: 0,
-      disk_total_gb: 0,
-      disk_free_gb: 0,
-    },
+    cpu_model: "Detectando...",
+    cpu_percent: 0,
+    cpu_temp: null,
+    memory_percent: 0,
+    memory_total_gb: 0,
+    memory_available_gb: 0,
+    memory_slots: [],
+    disk_percent: 0,
+    disk_total_gb: 0,
+    disk_free_gb: 0,
     gpus: [],
     net: { interfaces: [] },
   });
@@ -33,39 +67,33 @@ function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // CPU
-        const cpuRes = await fetch("/api/server-info/cpu/");
-        const cpu = await cpuRes.json();
+        const [cpuRes, memRes, diskRes, gpuRes, netRes] = await Promise.all([
+          fetch("/api/server-info/cpu/"),
+          fetch("/api/server-info/memory/"),
+          fetch("/api/server-info/storage/"),
+          fetch("/api/server-info/gpu/"),
+          fetch("/api/server-info/net/"),
+        ]);
 
-        // Memoria
-        const memRes = await fetch("/api/server-info/memory/");
-        const memory = await memRes.json();
-
-        // Disco
-        const diskRes = await fetch("/api/server-info/storage/");
-        const storage = await diskRes.json();
-
-        // GPU
-        const gpuRes = await fetch("/api/server-info/gpu/");
-        const gpu = await gpuRes.json();
-
-        // Red
-        const netRes = await fetch("/api/server-info/net/");
-        const net = await netRes.json();
+        const [cpu, memory, storage, gpu, net] = await Promise.all([
+          cpuRes.json(),
+          memRes.json(),
+          diskRes.json(),
+          gpuRes.json(),
+          netRes.json(),
+        ]);
 
         setStats({
-          cpu,
-          memory: {
-            memory_percent: memory.memory_percent,
-            memory_total_gb: memory.memory_total_gb,
-            memory_available_gb: memory.memory_available_gb,
-            memory_slots: memory.slots || [],
-          },
-          storage: {
-            disk_percent: storage.disk_percent,
-            disk_total_gb: storage.disk_total_gb,
-            disk_free_gb: storage.disk_free_gb,
-          },
+          cpu_model: cpu.cpu_model,
+          cpu_percent: cpu.cpu_percent,
+          cpu_temp: cpu.cpu_temp,
+          memory_percent: memory.memory_percent,
+          memory_total_gb: memory.memory_total_gb,
+          memory_available_gb: memory.memory_available_gb,
+          memory_slots: memory.slots || [],
+          disk_percent: storage.disk_percent,
+          disk_total_gb: storage.disk_total_gb,
+          disk_free_gb: storage.disk_free_gb,
           gpus: gpu.gpus || [],
           net: net || { interfaces: [] },
         });
@@ -79,8 +107,7 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const firstOccupied =
-    stats.memory.memory_slots.find((s) => s.status === "Occupied");
+  const firstOccupied = stats.memory_slots.find((s) => s.status === "Occupied");
   const memoryLabel = firstOccupied
     ? `(${firstOccupied.type} — ${firstOccupied.configured_memory_speed})`
     : "";
@@ -88,76 +115,27 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* CPU */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md lg:col-span-2">
-        <h2 className="text-xl mb-2">CPU</h2>
-        <p className="text-sm text-gray-400 mb-2">{stats.cpu.model}</p>
-
-        <GaugeChart
-          id="cpu-gauge"
-          nrOfLevels={20}
-          percent={(stats.cpu.cpu_percent_total || 0) / 100}
-          colors={["#00ff00", "#ff0000"]}
-          arcWidth={0.3}
-          animate={false}
-        />
-
-        <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-          <p>Uso total: {stats.cpu.cpu_percent_total}%</p>
-          <p>
-            Temp:{" "}
-            {stats.cpu.temperature_c !== null
-              ? `${stats.cpu.temperature_c} °C`
-              : "N/A"}
-          </p>
-          <p>
-            Frecuencia:{" "}
-            {stats.cpu.freq_current_mhz
-              ? `${stats.cpu.freq_current_mhz.toFixed(0)} MHz`
-              : "N/A"}{" "}
-            (min {stats.cpu.freq_min_mhz ?? "?"}, max{" "}
-            {stats.cpu.freq_max_mhz ?? "?"})
-          </p>
-          <p>
-            Núcleos: {stats.cpu.cores_physical} físicos /{" "}
-            {stats.cpu.cores_logical} lógicos
-          </p>
-          <p className="col-span-2 md:col-span-1">
-            Load Avg:{" "}
-            {stats.cpu.load_avg && stats.cpu.load_avg.length
-              ? stats.cpu.load_avg.map((l) => l.toFixed(2)).join(" | ")
-              : "N/A"}
-          </p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 text-xs">
-          {stats.cpu.cpu_percent_per_core.map((usage, i) => (
-            <div key={i} className="p-2 rounded bg-gray-700 text-center">
-              <p className="font-bold">Core {i}</p>
-              <p>{usage}%</p>
-            </div>
-          ))}
-        </div>
+      <GaugeCard
+        title="CPU"
+        value={stats.cpu_percent}
+        color="#00ff00"
+        subtitle={stats.cpu_model}
+      />
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+        <p>Temp: {stats.cpu_temp ? `${stats.cpu_temp} °C` : "N/A"}</p>
       </div>
 
       {/* RAM */}
+      <GaugeCard
+        title={`Memoria RAM ${memoryLabel}`}
+        value={stats.memory_percent}
+        color="#00bfff"
+        subtitle={`Total: ${stats.memory_total_gb} GB — Disponible: ${stats.memory_available_gb} GB`}
+      />
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-        <h2 className="text-xl mb-2">Memoria RAM {memoryLabel}</h2>
-        <p className="text-sm text-gray-400 mb-4">
-          Total: {stats.memory.memory_total_gb} GB — Disponible:{" "}
-          {stats.memory.memory_available_gb} GB
-        </p>
-        <GaugeChart
-          id="mem-gauge"
-          nrOfLevels={20}
-          percent={(stats.memory.memory_percent || 0) / 100}
-          colors={["#00bfff", "#ff0000"]}
-          arcWidth={0.3}
-          animate={false}
-        />
-        <p className="mt-2">Uso: {stats.memory.memory_percent}%</p>
-
-        <div className="mt-4 flex flex-col gap-2">
-          {stats.memory.memory_slots.map((slot, i) => (
+        <h3 className="text-lg mb-2">Slots de memoria</h3>
+        <div className="flex flex-col gap-2">
+          {stats.memory_slots.map((slot, i) => (
             <div
               key={i}
               className={`p-2 rounded-lg text-center text-xs ${
@@ -179,46 +157,26 @@ function Dashboard() {
       </div>
 
       {/* Disco */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-        <h2 className="text-xl mb-2">Disco</h2>
-        <p className="text-sm text-gray-400 mb-4">
-          Total: {stats.storage.disk_total_gb} GB — Libre:{" "}
-          {stats.storage.disk_free_gb} GB
-        </p>
-        <GaugeChart
-          id="disk-gauge"
-          nrOfLevels={20}
-          percent={(stats.storage.disk_percent || 0) / 100}
-          colors={["#ffff00", "#ff0000"]}
-          arcWidth={0.3}
-          animate={false}
-        />
-        <p className="mt-2">Uso: {stats.storage.disk_percent}%</p>
-      </div>
+      <GaugeCard
+        title="Disco"
+        value={stats.disk_percent}
+        color="#ffff00"
+        subtitle={`Total: ${stats.disk_total_gb} GB — Libre: ${stats.disk_free_gb} GB`}
+      />
 
       {/* GPU */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
         <h2 className="text-xl mb-2">GPU</h2>
         {stats.gpus && stats.gpus.length > 0 ? (
           stats.gpus.map((gpu, i) => (
-            <div key={i} className="mb-4">
-              <p className="font-bold">{gpu.name}</p>
-              <GaugeChart
-                id={`gpu-${i}`}
-                nrOfLevels={20}
-                percent={(gpu.load || 0) / 100}
-                colors={["#00ff00", "#ff0000"]}
-                arcWidth={0.3}
-                animate={false}
-              />
-              <p className="mt-1">Uso: {gpu.load}%</p>
-              <p className="mt-1">
-                Memoria: {gpu.memoryUsed} / {gpu.memoryTotal} MB
-              </p>
-              <p className="mt-1">
-                Temp: {gpu.temperature !== null ? `${gpu.temperature} °C` : "N/A"}
-              </p>
-            </div>
+            <GaugeCard
+              key={i}
+              title={gpu.name}
+              value={gpu.load}
+              color="#ff00ff"
+              unit="%"
+              subtitle={`Memoria: ${gpu.memoryUsed}/${gpu.memoryTotal} MB — Temp: ${gpu.temperature}°C`}
+            />
           ))
         ) : (
           <p>No se detectaron GPUs</p>
@@ -226,7 +184,7 @@ function Dashboard() {
       </div>
 
       {/* Red */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md col-span-1">
         <h2 className="text-xl mb-2">Interfaces de Red</h2>
         {stats.net.interfaces && stats.net.interfaces.length > 0 ? (
           stats.net.interfaces.map((iface, i) => (
