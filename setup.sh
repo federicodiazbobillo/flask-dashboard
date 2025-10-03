@@ -52,7 +52,8 @@ done
 
   echo "🔄 Re-ejecutando setup como usuario 'dashboard'..."
   exec sudo -u dashboard -H bash "$0"
-fi
+  exit 0  
+
 
 # ──────────────────────────────
 # FASE USUARIO (dashboard)
