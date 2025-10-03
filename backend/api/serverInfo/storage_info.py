@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 import psutil
 
-bp = Blueprint("storage_info", __name__, url_prefix="/storage")
+bp = Blueprint("storage_info", __name__, url_prefix="/server-info/storage")
 
 @bp.route("/", methods=["GET"])
 def storage_info():

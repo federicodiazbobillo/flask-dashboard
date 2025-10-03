@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 
-bp = Blueprint("gpu_info", __name__, url_prefix="/gpu")
+bp = Blueprint("gpu_info", __name__, url_prefix="/server-info/gpu")
 
 @bp.route("/", methods=["GET"])
 def gpu_root():

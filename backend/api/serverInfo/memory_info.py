@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 import psutil
 import subprocess
 
-bp = Blueprint("memory_info", __name__, url_prefix="/memory")
+bp = Blueprint("memory_info", __name__, url_prefix="/server-info/memory")
 
 @bp.route("/", methods=["GET"])
 def memory_info():

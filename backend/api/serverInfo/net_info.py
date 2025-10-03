@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 import psutil
 import socket
 
-bp = Blueprint("net_info", __name__, url_prefix="/net")
+bp = Blueprint("net_info", __name__, url_prefix="/server-info/net")
 
 @bp.route("/", methods=["GET"])
 def net_root():

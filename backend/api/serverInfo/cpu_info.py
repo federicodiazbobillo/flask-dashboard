@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 import psutil
 import cpuinfo
 
-bp = Blueprint("cpu_info", __name__, url_prefix="/cpu")
+bp = Blueprint("cpu_info", __name__, url_prefix="/server-info/cpu")
 
 @bp.route("/", methods=["GET"])
 def cpu_info():
