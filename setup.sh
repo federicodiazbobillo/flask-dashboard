@@ -27,18 +27,17 @@ done
 # ──────────────────────────────
 # FASE ROOT
 # ──────────────────────────────
-if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
   if command -v apt >/dev/null 2>&1; then
     echo "📦 Instalando dependencias del sistema con apt..."
     apt update -y
     apt install -y \
       python3 python3-venv python3-pip \
       git curl build-essential \
-      dmidecode lshw hwinfo psmisc lsof
+      dmidecode lshw hwinfo psmisc lsof \
+      nvidia-cuda-toolkit   # 📌 agregado aquí
   else
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
   fi
-
   if ! id -u dashboard >/dev/null 2>&1; then
     echo "👤 Creando usuario 'dashboard'..."
     useradd -m -s /bin/bash dashboard
