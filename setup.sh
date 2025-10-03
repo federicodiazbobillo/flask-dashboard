@@ -53,6 +53,55 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
   PROJECT_DIR="$(pwd)"
   chown -R dashboard:dashboard "$PROJECT_DIR"
 
+  # ──────────────────────────────
+  # PREGUNTA MODO DE INSTALACIÓN
+  # ──────────────────────────────
+  echo ""
+  echo "¿Cómo querés instalar el dashboard?"
+  echo "1) Modo manual (scripts ./start_flask.sh y ./start_react.sh)"
+  echo "2) Modo servicio (systemd, arranca solo en cada boot)"
+  read -p "Opción [1/2]: " INSTALL_MODE
+
+  # Guardamos la elección en archivo temporal para usar después
+  echo "$INSTALL_MODE" > /tmp/dashboard_install_mode
+
+  if [ "$INSTALL_MODE" = "2" ]; then
+    echo "⚙️ Creando wrapper start_all.sh..."
+    cat > "$PROJECT_DIR/start_all.sh" << 'EOF'
+#!/bin/bash
+set -e
+./start_flask.sh &
+./start_react.sh
+EOF
+    chmod +x "$PROJECT_DIR/start_all.sh"
+
+    echo "⚙️ Creando servicio systemd..."
+    SERVICE_FILE=/etc/systemd/system/dashboard.service
+    tee $SERVICE_FILE > /dev/null <<EOF
+[Unit]
+Description=Dashboard Flask + React
+After=network.target
+
+[Service]
+User=dashboard
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$PROJECT_DIR/start_all.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    echo "🔄 Habilitando servicio..."
+    systemctl daemon-reload
+    systemctl enable --now dashboard.service
+
+    echo "✅ Instalación como servicio completa!"
+  else
+    echo "✅ Instalación en modo manual seleccionada!"
+  fi
+
   echo "🔄 Re-ejecutando setup como usuario 'dashboard'..."
   exec sudo -u dashboard -H bash "$0"
   exit 0
@@ -226,51 +275,20 @@ EOF
 chmod +x update.sh
 
 # ──────────────────────────────
-# OPCIÓN DE INSTALACIÓN
+# RESUMEN FINAL
 # ──────────────────────────────
+INSTALL_MODE=$(cat /tmp/dashboard_install_mode)
+
 echo ""
-echo "¿Cómo querés instalar el dashboard?"
-echo "1) Modo manual (scripts ./start_flask.sh y ./start_react.sh)"
-echo "2) Modo servicio (systemd, arranca solo en cada boot)"
-read -p "Opción [1/2]: " INSTALL_MODE
-
 if [ "$INSTALL_MODE" = "2" ]; then
-  echo "⚙️ Creando wrapper start_all.sh..."
-  cat > start_all.sh << 'EOF'
-#!/bin/bash
-set -e
-./start_flask.sh &
-./start_react.sh
-EOF
-  chmod +x start_all.sh
-
-  echo "⚙️ Creando servicio systemd..."
-  SERVICE_FILE=/etc/systemd/system/dashboard.service
-  sudo tee $SERVICE_FILE > /dev/null <<EOF
-[Unit]
-Description=Dashboard Flask + React
-After=network.target
-
-[Service]
-User=dashboard
-WorkingDirectory=$PROJECT_DIR
-ExecStart=$PROJECT_DIR/start_all.sh
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  echo "🔄 Habilitando servicio..."
-  sudo systemctl daemon-reload
-  sudo systemctl enable --now dashboard.service
-
-  echo "✅ Instalación como servicio completa!"
-  echo "👉 Ver estado: sudo systemctl status dashboard"
-  echo "👉 Logs: sudo journalctl -u dashboard -f"
+  echo "✅ Setup completo en modo servicio (systemd)!"
+  echo "👉 El dashboard arranca solo en cada boot"
+  echo "👉 Manejo: systemctl start|stop|status dashboard"
+  echo "👉 Logs: journalctl -u dashboard -f"
 else
-  echo "✅ Instalación en modo manual completada!"
+  echo "✅ Setup completo en modo manual!"
+  echo "👉 Usuario de ejecución: dashboard"
   echo "👉 Levantar backend: ./start_flask.sh"
   echo "👉 Levantar frontend: ./start_react.sh"
+  echo "👉 Actualizar proyecto: ./update.sh"
 fi
