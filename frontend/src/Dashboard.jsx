@@ -10,8 +10,6 @@ function Dashboard() {
     memory_total_gb: 0,
     memory_available_gb: 0,
     memory_slots: [],
-    memory_type: "",
-    memory_speed_mhz: null,
     disk_percent: 0,
     disk_total_gb: 0,
     disk_free_gb: 0,
@@ -40,8 +38,6 @@ function Dashboard() {
           memory_total_gb: memory.memory_total_gb,
           memory_available_gb: memory.memory_available_gb,
           memory_slots: memory.slots || [],
-          memory_type: memory.memory_type || "",
-          memory_speed_mhz: memory.memory_speed_mhz || null,
           disk_percent: storage.disk_percent,
           disk_total_gb: storage.disk_total_gb,
           disk_free_gb: storage.disk_free_gb,
@@ -55,6 +51,12 @@ function Dashboard() {
     const interval = setInterval(fetchStats, 5000); // refrescar cada 5s
     return () => clearInterval(interval);
   }, []);
+
+  // 🔎 Tomar tipo y velocidad de primer slot ocupado
+  const firstOccupied = stats.memory_slots.find((s) => s.status === "Occupied");
+  const memoryLabel = firstOccupied
+    ? `(${firstOccupied.type} — ${firstOccupied.configured_memory_speed})`
+    : "";
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -77,12 +79,7 @@ function Dashboard() {
 
       {/* RAM */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-        <h2 className="text-xl mb-2">
-          Memoria RAM{" "}
-          {stats.memory_type && stats.memory_speed_mhz
-            ? `(${stats.memory_type} — ${stats.memory_speed_mhz} MHz)`
-            : ""}
-        </h2>
+        <h2 className="text-xl mb-2">Memoria RAM {memoryLabel}</h2>
         <p className="text-sm text-gray-400 mb-4">
           Total: {stats.memory_total_gb} GB — Disponible: {stats.memory_available_gb} GB
         </p>
