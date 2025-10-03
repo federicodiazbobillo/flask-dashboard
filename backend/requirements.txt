@@ -17,3 +17,4 @@ gunicorn==21.2.0          # Para producción con WSGI
 psutil==5.9.8
 
 py-cpuinfo
+GPUtil==1.4.0

@@ -1,25 +1,41 @@
 from flask import Blueprint, jsonify
 import psutil
+import socket
 
-net_bp = Blueprint("net_info", __name__)
+bp = Blueprint("net_info", __name__, url_prefix="/net")
 
-@net_bp.route("/api/server-info/net/", methods=["GET"])
-def get_net_info():
+@bp.route("/", methods=["GET"])
+def net_root():
     try:
         stats = psutil.net_if_stats()
         addrs = psutil.net_if_addrs()
 
+        def get_ipv4(name):
+            for a in addrs.get(name, []):
+                if a.family == socket.AF_INET:
+                    return a.address
+            return None
+
+        # psutil.AF_LINK puede no existir en algunas plataformas; 17 es común en Linux
+        AF_LINK = getattr(psutil, "AF_LINK", 17)
+
+        def get_mac(name):
+            for a in addrs.get(name, []):
+                if a.family == AF_LINK and a.address:
+                    return a.address
+            return None
+
         interfaces = []
-        for name, stat in stats.items():
+        for name, st in stats.items():
             interfaces.append({
                 "name": name,
-                "isup": stat.isup,
-                "speed": stat.speed,   # Mbps
-                "mtu": stat.mtu,
-                "mac": next((addr.address for addr in addrs.get(name, []) if addr.family == 17), None),
-                "ip": next((addr.address for addr in addrs.get(name, []) if addr.family == 2), None),
+                "isup": st.isup,
+                "speed": st.speed,  # Mbps
+                "mtu": st.mtu,
+                "ip": get_ipv4(name),
+                "mac": get_mac(name),
             })
 
         return jsonify({"interfaces": interfaces})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"interfaces": [], "error": str(e)}), 200
