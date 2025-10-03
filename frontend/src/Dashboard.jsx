@@ -6,20 +6,30 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// 📊 Componente gauge reusable
-function GaugeChart({ value, color }) {
-  const data = [{ value, fill: color }];
+// 🔥 Gauge tipo velocímetro
+function SpeedometerGauge({ value }) {
+  // Segmentos de colores
+  const segments = [
+    { value: 50, fill: "#00ff00" }, // Verde 0–50%
+    { value: 25, fill: "#ffff00" }, // Amarillo 50–75%
+    { value: 15, fill: "#ffa500" }, // Naranja 75–90%
+    { value: 10, fill: "#ff0000" }, // Rojo 90–100%
+  ];
+
+  // Puntero del valor actual
+  const pointer = [{ value, fill: "#ffffff" }];
+
   return (
-    <ResponsiveContainer width="100%" height={150}>
+    <ResponsiveContainer width="100%" height={200}>
       <RadialBarChart
         cx="50%"
-        cy="70%"
-        innerRadius="60%"
+        cy="100%"
+        innerRadius="20%"
         outerRadius="100%"
-        barSize={15}
-        data={data}
+        barSize={20}
         startAngle={180}
         endAngle={0}
+        data={segments}
       >
         <PolarAngleAxis
           type="number"
@@ -27,19 +37,22 @@ function GaugeChart({ value, color }) {
           angleAxisId={0}
           tick={false}
         />
-        <RadialBar minAngle={5} clockWise dataKey="value" cornerRadius={10} />
+        {/* Fondo de colores */}
+        <RadialBar dataKey="value" clockWise stackId="a" />
+        {/* Puntero blanco */}
+        <RadialBar data={pointer} dataKey="value" clockWise cornerRadius={10} />
       </RadialBarChart>
     </ResponsiveContainer>
   );
 }
 
-// 📦 Componente card genérico
-function GaugeCard({ title, value, unit = "%", color, subtitle, children }) {
+// 📦 Componente Card genérico
+function GaugeCard({ title, value, unit = "%", subtitle, children }) {
   return (
     <div className="bg-gray-800 p-6 rounded-xl shadow-md">
       <h2 className="text-xl mb-2">{title}</h2>
       {subtitle && <p className="text-sm text-gray-400 mb-2">{subtitle}</p>}
-      <GaugeChart value={value} color={color} />
+      <SpeedometerGauge value={value} />
       <p className="mt-2 text-center font-bold">
         {value}
         {unit}
@@ -135,7 +148,6 @@ function Dashboard() {
       <GaugeCard
         title="CPU"
         value={stats.cpu.cpu_percent_total}
-        color="#00ff00"
         subtitle={stats.cpu.model}
       >
         <p>
@@ -161,7 +173,6 @@ function Dashboard() {
             ? stats.cpu.load_avg.map((l) => l.toFixed(2)).join(" | ")
             : "N/A"}
         </p>
-
         <div className="mt-4 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 text-xs">
           {stats.cpu.cpu_percent_per_core.map((usage, i) => (
             <div key={i} className="p-2 rounded bg-gray-700 text-center">
@@ -176,7 +187,6 @@ function Dashboard() {
       <GaugeCard
         title={`Memoria RAM ${memoryLabel}`}
         value={stats.memory.memory_percent}
-        color="#00bfff"
         subtitle={`Total: ${stats.memory.memory_total_gb} GB — Disponible: ${stats.memory.memory_available_gb} GB`}
       >
         <div className="flex flex-col gap-2">
@@ -205,7 +215,6 @@ function Dashboard() {
       <GaugeCard
         title="Disco"
         value={stats.storage.disk_percent}
-        color="#ffff00"
         subtitle={`Total: ${stats.storage.disk_total_gb} GB — Libre: ${stats.storage.disk_free_gb} GB`}
       />
 
@@ -218,7 +227,6 @@ function Dashboard() {
               key={i}
               title={gpu.name}
               value={gpu.load}
-              color="#ff00ff"
               subtitle={`Memoria: ${gpu.memoryUsed}/${gpu.memoryTotal} MB — Temp: ${gpu.temperature}°C`}
             />
           ))
