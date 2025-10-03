@@ -6,60 +6,74 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-function GaugeCard({ title, value, color, unit = "%", subtitle }) {
-  const data = [{ name: title, value: value, fill: color }];
+// 📊 Componente gauge reusable
+function GaugeChart({ value, color }) {
+  const data = [{ value, fill: color }];
+  return (
+    <ResponsiveContainer width="100%" height={150}>
+      <RadialBarChart
+        cx="50%"
+        cy="70%"
+        innerRadius="60%"
+        outerRadius="100%"
+        barSize={15}
+        data={data}
+        startAngle={180}
+        endAngle={0}
+      >
+        <PolarAngleAxis
+          type="number"
+          domain={[0, 100]}
+          angleAxisId={0}
+          tick={false}
+        />
+        <RadialBar minAngle={5} clockWise dataKey="value" cornerRadius={10} />
+      </RadialBarChart>
+    </ResponsiveContainer>
+  );
+}
 
+// 📦 Componente card genérico
+function GaugeCard({ title, value, unit = "%", color, subtitle, children }) {
   return (
     <div className="bg-gray-800 p-6 rounded-xl shadow-md">
       <h2 className="text-xl mb-2">{title}</h2>
       {subtitle && <p className="text-sm text-gray-400 mb-2">{subtitle}</p>}
-      <div className="w-full h-40">
-        <ResponsiveContainer>
-          <RadialBarChart
-            cx="50%"
-            cy="70%"
-            innerRadius="60%"
-            outerRadius="100%"
-            barSize={15}
-            data={data}
-            startAngle={180}
-            endAngle={0}
-          >
-            <PolarAngleAxis
-              type="number"
-              domain={[0, 100]}
-              angleAxisId={0}
-              tick={false}
-            />
-            <RadialBar
-              minAngle={15}
-              clockWise
-              dataKey="value"
-              cornerRadius={10}
-            />
-          </RadialBarChart>
-        </ResponsiveContainer>
-      </div>
+      <GaugeChart value={value} color={color} />
       <p className="mt-2 text-center font-bold">
         {value}
         {unit}
       </p>
+      {children && <div className="mt-4 text-sm">{children}</div>}
     </div>
   );
 }
 
 function Dashboard() {
   const [stats, setStats] = useState({
-    cpu_model: "Detectando...",
-    cpu_percent: 0,
-    cpu_temp: null,
-    memory_percent: 0,
-    memory_total_gb: 0,
-    memory_available_gb: 0,
-    memory_slots: [],
-    disk_percent: 0,
-    disk_total_gb: 0,
-    disk_free_gb: 0,
+    cpu: {
+      model: "Detectando...",
+      cores_physical: 0,
+      cores_logical: 0,
+      cpu_percent_total: 0,
+      cpu_percent_per_core: [],
+      freq_current_mhz: null,
+      freq_min_mhz: null,
+      freq_max_mhz: null,
+      load_avg: [],
+      temperature_c: null,
+    },
+    memory: {
+      memory_percent: 0,
+      memory_total_gb: 0,
+      memory_available_gb: 0,
+      memory_slots: [],
+    },
+    storage: {
+      disk_percent: 0,
+      disk_total_gb: 0,
+      disk_free_gb: 0,
+    },
     gpus: [],
     net: { interfaces: [] },
   });
@@ -84,16 +98,18 @@ function Dashboard() {
         ]);
 
         setStats({
-          cpu_model: cpu.cpu_model,
-          cpu_percent: cpu.cpu_percent,
-          cpu_temp: cpu.cpu_temp,
-          memory_percent: memory.memory_percent,
-          memory_total_gb: memory.memory_total_gb,
-          memory_available_gb: memory.memory_available_gb,
-          memory_slots: memory.slots || [],
-          disk_percent: storage.disk_percent,
-          disk_total_gb: storage.disk_total_gb,
-          disk_free_gb: storage.disk_free_gb,
+          cpu,
+          memory: {
+            memory_percent: memory.memory_percent,
+            memory_total_gb: memory.memory_total_gb,
+            memory_available_gb: memory.memory_available_gb,
+            memory_slots: memory.slots || [],
+          },
+          storage: {
+            disk_percent: storage.disk_percent,
+            disk_total_gb: storage.disk_total_gb,
+            disk_free_gb: storage.disk_free_gb,
+          },
           gpus: gpu.gpus || [],
           net: net || { interfaces: [] },
         });
@@ -107,7 +123,8 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const firstOccupied = stats.memory_slots.find((s) => s.status === "Occupied");
+  const firstOccupied =
+    stats.memory.memory_slots.find((s) => s.status === "Occupied");
   const memoryLabel = firstOccupied
     ? `(${firstOccupied.type} — ${firstOccupied.configured_memory_speed})`
     : "";
@@ -117,25 +134,53 @@ function Dashboard() {
       {/* CPU */}
       <GaugeCard
         title="CPU"
-        value={stats.cpu_percent}
+        value={stats.cpu.cpu_percent_total}
         color="#00ff00"
-        subtitle={stats.cpu_model}
-      />
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-        <p>Temp: {stats.cpu_temp ? `${stats.cpu_temp} °C` : "N/A"}</p>
-      </div>
+        subtitle={stats.cpu.model}
+      >
+        <p>
+          Temp:{" "}
+          {stats.cpu.temperature_c !== null
+            ? `${stats.cpu.temperature_c} °C`
+            : "N/A"}
+        </p>
+        <p>
+          Núcleos: {stats.cpu.cores_physical} físicos /{" "}
+          {stats.cpu.cores_logical} lógicos
+        </p>
+        <p>
+          Frecuencia:{" "}
+          {stats.cpu.freq_current_mhz
+            ? `${stats.cpu.freq_current_mhz.toFixed(0)} MHz`
+            : "N/A"}{" "}
+          (min {stats.cpu.freq_min_mhz ?? "?"}, max {stats.cpu.freq_max_mhz ?? "?"})
+        </p>
+        <p>
+          Load Avg:{" "}
+          {stats.cpu.load_avg && stats.cpu.load_avg.length
+            ? stats.cpu.load_avg.map((l) => l.toFixed(2)).join(" | ")
+            : "N/A"}
+        </p>
+
+        <div className="mt-4 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 text-xs">
+          {stats.cpu.cpu_percent_per_core.map((usage, i) => (
+            <div key={i} className="p-2 rounded bg-gray-700 text-center">
+              <p className="font-bold">Core {i}</p>
+              <p>{usage}%</p>
+            </div>
+          ))}
+        </div>
+      </GaugeCard>
 
       {/* RAM */}
       <GaugeCard
         title={`Memoria RAM ${memoryLabel}`}
-        value={stats.memory_percent}
+        value={stats.memory.memory_percent}
         color="#00bfff"
-        subtitle={`Total: ${stats.memory_total_gb} GB — Disponible: ${stats.memory_available_gb} GB`}
-      />
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-        <h3 className="text-lg mb-2">Slots de memoria</h3>
+        subtitle={`Total: ${stats.memory.memory_total_gb} GB — Disponible: ${stats.memory.memory_available_gb} GB`}
+      >
         <div className="flex flex-col gap-2">
-          {stats.memory_slots.map((slot, i) => (
+          {stats.memory.memory_slots.map((slot, i) => (
             <div
               key={i}
               className={`p-2 rounded-lg text-center text-xs ${
@@ -154,14 +199,14 @@ function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
+      </GaugeCard>
 
       {/* Disco */}
       <GaugeCard
         title="Disco"
-        value={stats.disk_percent}
+        value={stats.storage.disk_percent}
         color="#ffff00"
-        subtitle={`Total: ${stats.disk_total_gb} GB — Libre: ${stats.disk_free_gb} GB`}
+        subtitle={`Total: ${stats.storage.disk_total_gb} GB — Libre: ${stats.storage.disk_free_gb} GB`}
       />
 
       {/* GPU */}
@@ -174,7 +219,6 @@ function Dashboard() {
               title={gpu.name}
               value={gpu.load}
               color="#ff00ff"
-              unit="%"
               subtitle={`Memoria: ${gpu.memoryUsed}/${gpu.memoryTotal} MB — Temp: ${gpu.temperature}°C`}
             />
           ))
