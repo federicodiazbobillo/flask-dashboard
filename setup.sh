@@ -92,7 +92,7 @@ pip install --upgrade pip
 deactivate
 cd ..
 
-# Frontend
+# Frontend (React + Tailwind)
 echo "📦 Configurando frontend (React + Tailwind)..."
 cd frontend
 if [ -f "package.json" ]; then
@@ -104,10 +104,12 @@ if [ -f "package.json" ]; then
 
   echo "➕ Instalando dependencias extra del dashboard..."
   npm install react-gauge-chart
+  npm install recharts   # 📌 Nuevo: instalamos Recharts
 
   echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
   npm install -D tailwindcss postcss autoprefixer
 
+  # Config de Tailwind
   if [ ! -f "tailwind.config.js" ]; then
     npx tailwindcss init -p
     cat > tailwind.config.js << 'EOF'
@@ -119,6 +121,7 @@ export default {
 EOF
   fi
 
+  # CSS base
   if [ ! -f "src/index.css" ]; then
     mkdir -p src
     cat > src/index.css << 'EOF'
@@ -192,7 +195,7 @@ if [ "$USER" != "dashboard" ]; then
   exec sudo -u dashboard -H bash "$0" "$@"
 fi
 
-PROJECT_DIR="/opt/flask-dashboard"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "📥 Git pull..."
 cd "$PROJECT_DIR"
