@@ -1,0 +1,27 @@
+# Dependencias base del sistema (para Ubuntu 22.04 / 24.04)
+# Estas herramientas son necesarias para que el dashboard Flask + React funcione correctamente.
+# Las versiones se instalan automáticamente desde los repos oficiales de Ubuntu.
+
+# --- Python y entorno de desarrollo ---
+python3             # Intérprete principal de Python
+python3-venv        # Soporte para entornos virtuales (venv)
+python3-pip         # Gestor de paquetes para Python
+
+# --- Herramientas del sistema ---
+git                 # Control de versiones (para clonar y actualizar el proyecto)
+curl                # Descarga de scripts y utilidades (por ejemplo, NVM)
+build-essential     # Compiladores (gcc, g++, make, etc.)
+
+# --- Utilidades de hardware ---
+dmidecode           # Lectura de información DMI (memoria, BIOS, CPU)
+lshw                # Listado detallado de hardware
+hwinfo              # Información extendida de sensores y dispositivos
+util-linux          # Herramientas del sistema (lsblk, dmesg, etc.)
+psmisc              # Comandos como fuser, killall, pstree
+lsof                # Ver archivos abiertos y procesos por puerto
+
+# --- GPU y drivers NVIDIA (instalación condicional) ---
+ubuntu-drivers-common   # Detección automática de drivers NVIDIA
+nvidia-driver-580-server # Driver estable recomendado (modo servidor, sin entorno gráfico)
+nvidia-utils-580-server  # Utilidades CLI (incluye nvidia-smi)
+nvidia-cuda-toolkit      # Toolkit CUDA (bibliotecas para GPU y utilidades básicas)
