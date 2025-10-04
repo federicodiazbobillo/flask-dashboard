@@ -183,9 +183,90 @@ if [ -f "package.json" ]; then
 fi
 cd "$PROJECT_DIR"
 
-# Scripts de inicio
+# ──────────────────────────────
+# GENERACIÓN DE SCRIPTS DE INICIO
+# ──────────────────────────────
 echo "⚙️ Generando scripts de inicio..."
-# (sin cambios en start_flask.sh / start_react.sh / update.sh — se mantienen)
+
+# start_flask.sh
+cat > start_flask.sh << 'EOF'
+#!/bin/bash
+if [ "$USER" != "dashboard" ]; then
+  exec sudo -u dashboard -H bash "$0" "$@"
+fi
+
+cd backend
+source venv/bin/activate
+
+PID=$(sudo lsof -t -i:5000)
+if [ -n "$PID" ]; then
+  echo "🔪 Matando proceso en puerto 5000 (PID $PID)"
+  sudo kill -9 $PID || true
+fi
+
+export PATH=$PATH:/usr/bin
+export FLASK_APP=wsgi.py
+export FLASK_ENV=development
+flask run --host=0.0.0.0 --port=5000
+EOF
+chmod +x start_flask.sh
+
+# start_react.sh
+cat > start_react.sh << 'EOF'
+#!/bin/bash
+if [ "$USER" != "dashboard" ]; then
+  exec sudo -u dashboard -H bash "$0" "$@"
+fi
+
+cd frontend
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 22
+
+PID=$(sudo lsof -t -i:5173)
+if [ -n "$PID" ]; then
+  echo "🔪 Matando proceso en puerto 5173 (PID $PID)"
+  sudo kill -9 $PID || true
+fi
+
+npm run dev -- --host 0.0.0.0 --port=5173
+EOF
+chmod +x start_react.sh
+
+# update.sh
+cat > update.sh << 'EOF'
+#!/bin/bash
+set -e
+if [ "$USER" != "dashboard" ]; then
+  exec sudo -u dashboard -H bash "$0" "$@"
+fi
+
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "📥 Git pull..."
+cd "$PROJECT_DIR"
+git pull
+
+echo "🐍 Backend: requirements..."
+cd backend
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+deactivate
+
+echo "🟦 Frontend: npm install..."
+cd ../frontend
+if ! npm install; then
+  npm install --legacy-peer-deps
+fi
+
+echo "🔒 Ajustando permisos..."
+cd "$PROJECT_DIR"
+chown -R dashboard:dashboard "$PROJECT_DIR"
+
+echo "✅ Update completo!"
+EOF
+chmod +x update.sh
 
 # ──────────────────────────────
 # FINALIZACIÓN Y REINICIO
