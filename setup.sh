@@ -33,7 +33,8 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
 
     if [ -f "apt-requirements.txt" ]; then
       echo "📜 Leyendo dependencias desde apt-requirements.txt..."
-      grep -vE '^\s*#' apt-requirements.txt | xargs apt install -y
+      xargs -r -a <(grep -vE '^\s*(#|$)' apt-requirements.txt) apt install -y
+
     else
       echo "⚠️ No se encontró apt-requirements.txt, usando lista mínima por defecto."
       apt install -y python3 python3-venv python3-pip git curl build-essential
