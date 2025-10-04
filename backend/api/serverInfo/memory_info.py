@@ -19,7 +19,7 @@ def _parse_int_mb(text):
     if unit == "GB":
         return val * 1024
     return val
-
+ 
 def _safe_run(cmd):
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=False)

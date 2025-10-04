@@ -300,7 +300,7 @@ EOF
 chmod +x update.sh
 
 # ──────────────────────────────
-# RESUMEN FINAL
+# RESUMEN FINAL Y REINICIO
 # ──────────────────────────────
 INSTALL_MODE=$(cat /tmp/dashboard_install_mode)
 
@@ -317,3 +317,21 @@ else
   echo "👉 Levantar frontend: ./start_react.sh"
   echo "👉 Actualizar proyecto: ./update.sh"
 fi
+
+# ──────────────────────────────
+# REINICIO AUTOMÁTICO SI SE INSTALÓ DRIVER NVIDIA
+# ──────────────────────────────
+if [ "$EUID" -eq 0 ]; then
+  if dpkg -l | grep -q "nvidia-driver"; then
+    echo ""
+    echo "🔁 Se detectó instalación o actualización de drivers NVIDIA."
+    echo "💡 Es necesario reiniciar para activar el módulo del kernel."
+    echo "Reiniciando el sistema en 10 segundos..."
+    sleep 10
+    reboot
+  else
+    echo ""
+    echo "✅ Setup finalizado sin instalación de drivers NVIDIA. No se requiere reinicio."
+  fi
+fi
+  
