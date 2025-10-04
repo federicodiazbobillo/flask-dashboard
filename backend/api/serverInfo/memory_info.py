@@ -6,7 +6,7 @@ import re
 bp = Blueprint("memory_info", __name__, url_prefix="/server-info/memory")
 
 DMIDECODE_BIN = "/usr/sbin/dmidecode"
-
+ 
 def _parse_int_mb(text):
     # Devuelve tamaño en MB, o None si no hay módulo
     if not text or "No Module Installed" in text:
