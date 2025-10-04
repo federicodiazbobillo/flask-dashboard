@@ -34,8 +34,8 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
     apt install -y \
       python3 python3-venv python3-pip \
       git curl build-essential \
-      dmidecode lshw hwinfo psmisc lsof \
-      nvidia-cuda-toolkit
+      dmidecode lshw hwinfo util-linux psmisc lsof \
+      nvidia-cuda-toolkit 
   else
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
   fi
