@@ -34,10 +34,9 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
     if [ -f "apt-requirements.txt" ]; then
       echo "📜 Leyendo dependencias desde apt-requirements.txt..."
       xargs -r -a <(grep -vE '^\s*(#|$)' apt-requirements.txt) apt install -y
-
     else
       echo "⚠️ No se encontró apt-requirements.txt, usando lista mínima por defecto."
-      apt install -y python3 python3-venv python3-pip git curl build-essential
+      apt install -y python3 python3-venv python3-pip git curl build-essential dmidecode lshw hwinfo util-linux psmisc lsof nvidia-cuda-toolkit
     fi
   else
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
@@ -175,8 +174,7 @@ if [ -f "package.json" ]; then
   fi
 
   echo "➕ Instalando dependencias extra del dashboard..."
-  npm install react-gauge-chart recharts
-  npm install lucide-react  # 👈 nuevo: iconos UI
+  npm install react-gauge-chart recharts lucide-react
   npm install -D tailwindcss postcss autoprefixer
 
   if [ ! -f "tailwind.config.js" ]; then
@@ -190,7 +188,7 @@ echo "⚙️ Generando scripts de inicio..."
 # (sin cambios en start_flask.sh / start_react.sh / update.sh — se mantienen)
 
 # ──────────────────────────────
-# REINICIO AUTOMÁTICO SI SE INSTALÓ DRIVER NVIDIA
+# FINALIZACIÓN Y REINICIO
 # ──────────────────────────────
 if [ "$EUID" -eq 0 ]; then
   if dpkg -l | grep -q "nvidia-driver"; then
@@ -203,3 +201,6 @@ if [ "$EUID" -eq 0 ]; then
     echo "✅ Setup finalizado sin instalación de drivers NVIDIA."
   fi
 fi
+
+echo "✅ Setup completado correctamente."
+exit 0
