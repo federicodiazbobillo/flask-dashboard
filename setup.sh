@@ -40,13 +40,40 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
     echo "⚠️ apt no disponible, saltando instalación de paquetes de sistema"
   fi
 
+  # ──────────────────────────────
+  # DETECCIÓN Y CONFIGURACIÓN DE GPU NVIDIA
+  # ──────────────────────────────
+  echo "🧠 Verificando presencia de GPU NVIDIA..."
+  if lspci | grep -i nvidia >/dev/null 2>&1; then
+    echo "💡 GPU NVIDIA detectada. Verificando driver y utilidades..."
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+      echo "⚙️ Instalando driver y utilidades NVIDIA (versión server recomendada)..."
+      apt install -y ubuntu-drivers-common
+      if ! ubuntu-drivers autoinstall; then
+        echo "⚠️ Fallback: instalando driver estable nvidia-driver-580-server"
+        apt install -y nvidia-driver-580-server nvidia-utils-580-server
+      fi
+    else
+      echo "✅ NVIDIA driver ya instalado: $(nvidia-smi --query-gpu=driver_version --format=csv,noheader)"
+    fi
+
+    echo "🧩 Verificando acceso a nvidia-smi..."
+    if command -v nvidia-smi >/dev/null 2>&1; then
+      echo "✅ nvidia-smi disponible en: $(which nvidia-smi)"
+    else
+      echo "⚠️ No se encontró nvidia-smi tras la instalación. Requiere reinicio manual."
+    fi
+  else
+    echo "ℹ️ No se detectaron GPUs NVIDIA en este equipo."
+  fi
+
   if ! id -u dashboard >/dev/null 2>&1; then
     echo "👤 Creando usuario 'dashboard'..."
     useradd -m -s /bin/bash dashboard
   fi
 
   echo "🔑 Configurando sudoers para usuario 'dashboard'..."
-  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo, /usr/bin/lsof, /bin/kill" \
+  echo "dashboard ALL=(ALL) NOPASSWD: /usr/sbin/dmidecode, /usr/bin/lshw, /usr/bin/hwinfo, /usr/bin/lscpu, /usr/bin/lsof, /bin/kill" \
     | tee /etc/sudoers.d/dashboard >/dev/null
   chmod 440 /etc/sudoers.d/dashboard
 
@@ -62,7 +89,6 @@ if [ "$EUID" -eq 0 ] && [ "$USER" != "dashboard" ]; then
   echo "2) Modo servicio (systemd, arranca solo en cada boot)"
   read -p "Opción [1/2]: " INSTALL_MODE
 
-  # Guardamos la elección en archivo temporal para usar después
   echo "$INSTALL_MODE" > /tmp/dashboard_install_mode
 
   if [ "$INSTALL_MODE" = "2" ]; then
@@ -161,7 +187,6 @@ if [ -f "package.json" ]; then
   echo "🎨 Instalando TailwindCSS + PostCSS + Autoprefixer..."
   npm install -D tailwindcss postcss autoprefixer
 
-  # Config de Tailwind
   if [ ! -f "tailwind.config.js" ]; then
     npx tailwindcss init -p
     cat > tailwind.config.js << 'EOF'
@@ -173,7 +198,6 @@ export default {
 EOF
   fi
 
-  # CSS base
   if [ ! -f "src/index.css" ]; then
     mkdir -p src
     cat > src/index.css << 'EOF'
@@ -211,6 +235,7 @@ if [ -n "$PID" ]; then
   sudo kill -9 $PID || true
 fi
 
+export PATH=$PATH:/usr/bin
 export FLASK_APP=wsgi.py
 export FLASK_ENV=development
 flask run --host=0.0.0.0 --port=5000
