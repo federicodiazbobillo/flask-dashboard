@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import GaugeSemiCircle from "./components/GaugeSemiCircle";
+import GaugeSemiCircle from "../components/GaugeSemiCircle";
 
 function Dashboard() {
   const [stats, setStats] = useState({
